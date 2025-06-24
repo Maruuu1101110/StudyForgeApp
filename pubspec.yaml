@@ -12,14 +12,26 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   device_preview: ^1.2.0
+  uuid: ^4.5.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
+  flutter_speed_dial: ^7.0.0
+  sqflite: ^2.0.0+3
+  path_provider: ^2.1.5
 
 # The following section is specific to Flutter packages.
 flutter:
-
   uses-material-design: true
+  fonts:
+    - family: JBMRegular
+      fonts:
+        - asset: assets/fonts/JBM-Regular.ttf
+    - family: GwendaTimes
+      fonts:
+        - asset: assets/fonts/GwendaTimes-Regular.ttf
+    - family: Petrona
+      fonts:
+        - asset: assets/fonts/Petrona-Regular.ttf

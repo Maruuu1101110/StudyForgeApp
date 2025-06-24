@@ -68,8 +68,10 @@ class _ForgeHomeState extends State<ForgeHomePage> {
       },
       child: Scaffold(
         appBar: AppBar(
+          scrolledUnderElevation: 0,
           backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
           title: const Text("Home"),
+          titleSpacing: 0,
           leading: Builder(
             builder: (context) {
               return IconButton(

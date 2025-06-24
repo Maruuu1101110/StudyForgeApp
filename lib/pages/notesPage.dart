@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '/algorithms/noteSearchAlgo.dart';
 import 'homePage.dart';
+import 'noteRelated/noteEditPage.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:study_forge/algorithms/navigationObservers.dart';
 
 class ForgeNotesPage extends StatefulWidget {
   const ForgeNotesPage({super.key});
@@ -9,7 +12,7 @@ class ForgeNotesPage extends StatefulWidget {
   State<ForgeNotesPage> createState() => _ForgeNotesState();
 }
 
-class _ForgeNotesState extends State<ForgeNotesPage> {
+class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
   final noteManager = NoteManager();
   final FocusNode _searchfocus = FocusNode();
   List<Note> searchResults = [];
@@ -21,12 +24,14 @@ class _ForgeNotesState extends State<ForgeNotesPage> {
     String text,
     String query, {
     bool bold = false,
-    double fontSize = 14,
+    double fontSize = 16,
+    String fontFamily = "Petrona",
   }) {
     final baseStyle = TextStyle(
       color: Colors.white,
       fontWeight: bold ? FontWeight.w500 : FontWeight.normal,
       fontSize: fontSize,
+      fontFamily: fontFamily,
     );
 
     if (query.isEmpty) {
@@ -67,10 +72,60 @@ class _ForgeNotesState extends State<ForgeNotesPage> {
     );
   }
 
+  @override
+  void initState() {
+    super.initState();
+    //noteManager.migrateDatabaseAddCreatedAt(); // Uncomment if database is updated.....
+    //noteManager.clearDB(); // uncommment if you want to nuke the database
+    loadNotes();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    loadNotes(); // ← called when returning back to this screen
+  }
+
   String getPreviewText(String content, {int wordLimit = 15}) {
     final words = content.split(RegExp(r'\s+')); // Split by spaces
-    if (words.length <= wordLimit) return "\n        " + content;
-    return '\n        ' + words.take(wordLimit).join(' ') + '...';
+    if (words.length <= wordLimit) return "\n    -    $content";
+    return '\n    -    ${words.take(wordLimit).join(' ')}...';
+  }
+
+  Future<void> resetSearch() async {
+    final allNotes = await noteManager.getAllNotes();
+    setState(() {
+      searchQuery = '';
+      searchResults = allNotes;
+    });
+  }
+
+  Future<void> performSearch(String query) async {
+    final results = await noteManager.searchNotes(
+      query,
+    ); // Await the search results
+    setState(() {
+      searchQuery = query;
+      searchResults = results;
+    });
+  }
+
+  void loadNotes() async {
+    final notes = await noteManager.getAllNotes();
+    setState(() {
+      searchResults = notes;
+    });
   }
 
   Widget _SidebarIcon({
@@ -109,10 +164,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> {
           return false;
         }
         if (searchQuery.isNotEmpty) {
-          setState(() {
-            searchQuery = '';
-            searchResults = noteManager.allNotes;
-          });
+          resetSearch();
           return false;
         }
 
@@ -148,10 +200,53 @@ class _ForgeNotesState extends State<ForgeNotesPage> {
         return shouldExit ?? false;
       },
       child: Scaffold(
-        // ...
+        floatingActionButton: Padding(
+          padding: EdgeInsets.all(20),
+          child: SpeedDial(
+            icon: Icons.add,
+            buttonSize: Size(55, 55),
+            activeIcon: Icons.close,
+            backgroundColor: Colors.amber,
+            overlayColor: Color.fromRGBO(0, 0, 0, 0.1),
+            childMargin: EdgeInsets.only(right: 2),
+            spaceBetweenChildren: 10,
+            children: [
+              SpeedDialChild(
+                backgroundColor: Color.fromRGBO(30, 30, 30, 1),
+                labelBackgroundColor: Colors.transparent,
+                child: Icon(Icons.note_add, color: Colors.amber),
+                label: 'New Note',
+                labelShadow: [],
+                onTap: () => Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        NoteEditPage(noteManager: noteManager),
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          );
+                        },
+                  ),
+                ),
+              ),
+              SpeedDialChild(
+                backgroundColor: Color.fromRGBO(30, 30, 30, 1),
+                labelBackgroundColor: Colors.transparent,
+                labelShadow: [],
+                child: Icon(Icons.folder_open, color: Colors.amber),
+                label: 'Open Folder',
+                onTap: () => print('Open Folder tapped'),
+              ),
+            ],
+          ),
+        ),
         appBar: AppBar(
-          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          scrolledUnderElevation: 0,
+          backgroundColor: Color.fromARGB(255, 30, 30, 30),
           title: Text("Notes"),
+          titleSpacing: 0,
           leading: Builder(
             builder: (context) {
               return IconButton(
@@ -269,10 +364,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> {
                   ),
                 ),
                 onChanged: (query) {
-                  setState(() {
-                    searchQuery = query;
-                    searchResults = noteManager.searchNotes(query);
-                  });
+                  performSearch(query);
                 },
               ),
 
@@ -281,52 +373,90 @@ class _ForgeNotesState extends State<ForgeNotesPage> {
               // 📋 The list of filtered notes
               Expanded(
                 child: searchQuery.isEmpty
-                    ? (noteManager.allNotes.isEmpty
-                          ? const Center(
+                    ? FutureBuilder<List<Note>>(
+                        future: noteManager
+                            .getAllNotes(), // Fetch notes asynchronously
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Center(
+                              child: CircularProgressIndicator(),
+                            ); // Show loading spinner
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return Center(
                               child: Text(
                                 "No notes available.",
-                                style: TextStyle(fontSize: 30),
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  color: Colors.white,
+                                ),
                               ),
-                            )
-                          : ListView.builder(
-                              itemCount: noteManager.allNotes.length,
-                              itemBuilder: (context, index) {
-                                final note = noteManager.allNotes[index];
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8.0,
-                                    vertical: 4.0,
-                                  ), // spacing between cards
-                                  child: Card(
-                                    elevation: 2,
+                            );
+                          }
+
+                          final notes = snapshot.data!;
+                          return ListView.builder(
+                            itemCount: notes.length,
+                            itemBuilder: (context, index) {
+                              final note = notes[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 0,
+                                  vertical: 4.0,
+                                ),
+                                child: Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  color: Color.fromRGBO(20, 20, 20, 1),
+                                  child: ListTile(
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    color: Color.fromRGBO(19, 19, 19, 1),
-                                    child: ListTile(
-                                      contentPadding: const EdgeInsets.all(16),
-                                      title: highlightText(
-                                        note.title,
-                                        searchQuery,
-                                        bold: true,
-                                        fontSize: 20,
-                                      ),
-                                      subtitle: highlightText(
-                                        getPreviewText(
-                                          note.content,
-                                          wordLimit: 20,
-                                        ),
-                                        searchQuery,
-                                        fontSize: 14,
-                                      ),
-                                      onTap: () {
-                                        // open note
-                                      },
+                                    contentPadding: const EdgeInsets.all(16),
+                                    title: Text(note.title),
+                                    subtitle: Text(
+                                      getPreviewText(note.content),
                                     ),
+                                    textColor: Colors.white,
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        PageRouteBuilder(
+                                          pageBuilder:
+                                              (
+                                                context,
+                                                animation,
+                                                secondaryAnimation,
+                                              ) => NoteEditPage(
+                                                noteManager: noteManager,
+                                                id: note.id,
+                                                title: note.title,
+                                                content: note.content,
+                                              ),
+                                          transitionsBuilder:
+                                              (
+                                                context,
+                                                animation,
+                                                secondaryAnimation,
+                                                child,
+                                              ) {
+                                                return FadeTransition(
+                                                  opacity: animation,
+                                                  child: child,
+                                                );
+                                              },
+                                        ),
+                                      );
+                                    },
                                   ),
-                                );
-                              },
-                            ))
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      )
                     : (searchResults.isEmpty
                           ? const Center(
                               child: Text(
@@ -340,7 +470,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> {
                                 final note = searchResults[index];
                                 return Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8.0,
+                                    horizontal: 0,
                                     vertical: 4.0,
                                   ),
                                   child: Card(
@@ -348,8 +478,11 @@ class _ForgeNotesState extends State<ForgeNotesPage> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    color: Color.fromRGBO(19, 19, 19, 1),
+                                    color: Color.fromRGBO(20, 20, 20, 1),
                                     child: ListTile(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                       contentPadding: const EdgeInsets.all(16),
                                       title: highlightText(
                                         note.title,
@@ -363,17 +496,43 @@ class _ForgeNotesState extends State<ForgeNotesPage> {
                                           wordLimit: 20,
                                         ),
                                         searchQuery,
-                                        fontSize: 14,
+                                        fontSize: 16,
                                       ),
                                       onTap: () {
-                                        // open note
+                                        Navigator.of(context).push(
+                                          PageRouteBuilder(
+                                            pageBuilder:
+                                                (
+                                                  context,
+                                                  animation,
+                                                  secondaryAnimation,
+                                                ) => NoteEditPage(
+                                                  noteManager: noteManager,
+                                                  id: note.id,
+                                                  title: note.title,
+                                                  content: note.content,
+                                                ),
+                                            transitionsBuilder:
+                                                (
+                                                  context,
+                                                  animation,
+                                                  secondaryAnimation,
+                                                  child,
+                                                ) {
+                                                  return FadeTransition(
+                                                    opacity: animation,
+                                                    child: child,
+                                                  );
+                                                },
+                                          ),
+                                        );
                                       },
                                     ),
                                   ),
                                 );
                               },
                             )),
-              ),
+              ), //Above this code
             ],
           ),
         ),
