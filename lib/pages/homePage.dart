@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 import 'package:study_forge/pages/notesPage.dart';
 import 'package:study_forge/pages/noteRelated/noteEditPage.dart';
-import 'package:flutter_multi_select_items/flutter_multi_select_items.dart';
 
 class ForgeHomePage extends StatefulWidget {
   const ForgeHomePage({super.key});
@@ -167,14 +166,13 @@ class _ForgeHomeState extends State<ForgeHomePage> {
             ],
           ),
         ),
-        body: MultiSelectContainer(
-          items: [
-            MultiSelectCard(value: '1', label: 'Note 1'),
-            MultiSelectCard(value: '2', label: 'Note 2'),
-          ],
-          onChange: (allSelectedItems, selectedItem) {
-            print("Selected: $selectedItem");
-          },
+        body: Padding(
+          padding: EdgeInsets.all(20),
+          child: Text(
+            'Welcome to this "WTF is this app".... just do some random shi-\n\n\nbtw Settings and Folder is out of service, same with Search....<heh>',
+            style: TextStyle(fontSize: 25),
+            textAlign: TextAlign.center,
+          ),
         ),
       ),
     );
