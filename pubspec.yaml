@@ -11,16 +11,18 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  device_preview: ^1.2.0
+  flutter_speed_dial: ^7.0.0
+  sqflite: ^2.0.0+3
+  path_provider: ^2.1.5
   uuid: ^4.5.1
+  flutter_multi_select_items: ^0.4.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  flutter_speed_dial: ^7.0.0
-  sqflite: ^2.0.0+3
-  path_provider: ^2.1.5
+  device_preview: ^1.2.0
+  sqflite_common_ffi: ^2.3.6
 
 # The following section is specific to Flutter packages.
 flutter:

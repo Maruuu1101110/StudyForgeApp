@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:study_forge/pages/homePage.dart';
+import 'package:study_forge/customWidgets/speedDial.dart';
+import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 
 class NoteEditPage extends StatefulWidget {
   final NoteManager noteManager;
@@ -23,6 +22,7 @@ class NoteEditPage extends StatefulWidget {
 }
 
 class _NoteEditPageState extends State<NoteEditPage> {
+  final noteManager = NoteManager();
   late TextEditingController _titleController = TextEditingController();
   late TextEditingController _contentController = TextEditingController();
 
@@ -34,6 +34,19 @@ class _NoteEditPageState extends State<NoteEditPage> {
     _titleController.addListener(() {
       setState(() {});
     });
+
+    _titleController.addListener(_updateSaveButtonState);
+    _contentController.addListener(_updateSaveButtonState);
+  }
+
+  bool isSaveEnabled = false;
+  void _updateSaveButtonState() {
+    final hasText =
+        _titleController.text.trim().isNotEmpty ||
+        _contentController.text.trim().isNotEmpty;
+    if (hasText != isSaveEnabled) {
+      setState(() => isSaveEnabled = hasText);
+    }
   }
 
   @override
@@ -45,7 +58,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
 
   void addNote() {
     final idToUse = widget.id ?? Uuid().v4();
-    widget.noteManager.addNote(
+    widget.noteManager!.addNote(
       idToUse,
       _titleController.text,
       _contentController.text,
@@ -55,45 +68,6 @@ class _NoteEditPageState extends State<NoteEditPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: Padding(
-        padding: EdgeInsets.all(20),
-        child: SpeedDial(
-          icon: Icons.add,
-          buttonSize: Size(55, 55),
-          activeIcon: Icons.close,
-          backgroundColor: Colors.amber,
-          overlayColor: Color.fromRGBO(0, 0, 0, 0.1),
-          childMargin: EdgeInsets.only(right: 2),
-          spaceBetweenChildren: 10,
-          children: [
-            SpeedDialChild(
-              backgroundColor: Color.fromRGBO(30, 30, 30, 1),
-              labelBackgroundColor: Color.fromRGBO(30, 30, 30, 0),
-              labelShadow: [],
-              child: Icon(Icons.note_add, color: Colors.amber),
-              label: 'New Note',
-              onTap: () => Navigator.of(context).pushReplacement(
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      NoteEditPage(noteManager: widget.noteManager),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                        return FadeTransition(opacity: animation, child: child);
-                      },
-                ),
-              ),
-            ),
-            SpeedDialChild(
-              backgroundColor: Color.fromRGBO(30, 30, 30, 1),
-              labelBackgroundColor: Color.fromRGBO(30, 30, 30, 0),
-              labelShadow: [],
-              child: Icon(Icons.folder_open, color: Colors.amber),
-              label: 'Open Folder',
-              onTap: () => print('Open Folder tapped'),
-            ),
-          ],
-        ),
-      ),
       // ...
       appBar: AppBar(
         scrolledUnderElevation: 0,
@@ -116,20 +90,35 @@ class _NoteEditPageState extends State<NoteEditPage> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.save, color: Colors.amber),
-            onPressed: () async {
-              final id = widget.id ?? Uuid().v4();
-              final title = _titleController.text.trim();
-              final content = _contentController.text.trim();
+            onPressed: isSaveEnabled
+                ? () async {
+                    final id = widget.id ?? Uuid().v4();
+                    final title = _titleController.text.trim();
+                    final content = _contentController.text.trim();
 
-              if (widget.id != null) {
-                await widget.noteManager.updateNote(id, title, content);
-              } else {
-                await widget.noteManager.addNote(id, title, content);
-              }
+                    if (widget.id != null) {
+                      await widget.noteManager.updateNote(id, title, content);
+                    } else {
+                      await widget.noteManager.addNote(id, title, content);
+                    }
 
-              Navigator.pop(context); // Go back after saving
-            },
+                    Navigator.pop(context);
+                  }
+                : null,
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              child: Padding(
+                padding: EdgeInsets.only(right: 10),
+                child: Icon(
+                  Icons.save,
+                  key: ValueKey<bool>(isSaveEnabled), // forces switch
+                  color: isSaveEnabled ? Colors.amber : Colors.grey,
+                  size: 30,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -179,9 +168,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
                   maxLines: null,
                   minLines: null,
                   keyboardType: TextInputType.multiline,
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ), // 🔥 makes the input text amber
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: "Type something...",
                     hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),

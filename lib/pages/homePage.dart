@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'notesPage.dart';
+import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/pages/notesPage.dart';
+import 'package:study_forge/pages/noteRelated/noteEditPage.dart';
+import 'package:flutter_multi_select_items/flutter_multi_select_items.dart';
 
 class ForgeHomePage extends StatefulWidget {
   const ForgeHomePage({super.key});
@@ -98,7 +101,14 @@ class _ForgeHomeState extends State<ForgeHomePage> {
                   const SizedBox(height: 40),
                   _SidebarIcon(
                     icon: Icons.note_add_outlined,
-                    onPressed: () {},
+                    onPressed: () => Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) =>
+                            NoteEditPage(noteManager: NoteManager()),
+                        transitionsBuilder: (_, animation, __, child) =>
+                            FadeTransition(opacity: animation, child: child),
+                      ),
+                    ),
                     tooltip: "New Note",
                   ),
                   _SidebarIcon(
@@ -157,12 +167,14 @@ class _ForgeHomeState extends State<ForgeHomePage> {
             ],
           ),
         ),
-        body: const Center(
-          child: Text(
-            "This is HOME PAGE",
-            style: TextStyle(fontSize: 50),
-            textAlign: TextAlign.center,
-          ),
+        body: MultiSelectContainer(
+          items: [
+            MultiSelectCard(value: '1', label: 'Note 1'),
+            MultiSelectCard(value: '2', label: 'Note 2'),
+          ],
+          onChange: (allSelectedItems, selectedItem) {
+            print("Selected: $selectedItem");
+          },
         ),
       ),
     );

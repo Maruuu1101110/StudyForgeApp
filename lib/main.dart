@@ -1,10 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:study_forge/pages/noteRelated/noteEditPage.dart';
-import 'package:study_forge/pages/notesPage.dart';
 import 'package:device_preview/device_preview.dart';
 import 'algorithms/navigationObservers.dart';
+import 'package:study_forge/pages/homePage.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    // ✅ Desktop-specific: Use FFI for SQLite
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
   runApp(DevicePreview(enabled: false, builder: (context) => StudyForge()));
 }
 
@@ -36,7 +46,7 @@ class StudyForge extends StatelessWidget {
           backgroundColor: mainColor,
         ),
       ),
-      home: ForgeNotesPage(),
+      home: ForgeHomePage(),
     );
   }
 }
