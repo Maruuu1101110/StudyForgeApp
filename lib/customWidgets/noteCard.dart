@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 import 'package:study_forge/pages/noteRelated/noteEditPage.dart';
 import 'package:study_forge/customWidgets/bookmark.dart';
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 
 class NoteCard extends StatefulWidget {
   final Note note;

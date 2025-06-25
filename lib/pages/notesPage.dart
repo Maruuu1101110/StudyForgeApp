@@ -5,7 +5,6 @@ import '../customWidgets/noteCard.dart';
 import '../customWidgets/speedDial.dart';
 import 'package:study_forge/algorithms/navigationObservers.dart';
 import '../customWidgets/sideBar.dart';
-import '../customWidgets/floatingSearch.dart';
 
 class ForgeNotesPage extends StatefulWidget {
   const ForgeNotesPage({super.key});
@@ -17,11 +16,9 @@ class ForgeNotesPage extends StatefulWidget {
 class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
   final noteManager = NoteManager();
   List<Note> allNotes = [];
-  final FocusNode _searchFocus = FocusNode();
   List<Note> searchResults = [];
   TextEditingController searchController = TextEditingController();
   String searchQuery = '';
-  bool _isFocused = false;
   Set<String> selectedNoteIds = {};
   Set<String> selectedNotes = {};
   bool get isSelectionMode => selectedNotes.isNotEmpty;
@@ -30,9 +27,6 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
   @override
   void initState() {
     super.initState();
-    _searchFocus.addListener(() {
-      setState(() => _isFocused = _searchFocus.hasFocus);
-    });
     loadNotes();
   }
 

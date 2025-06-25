@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:study_forge/customWidgets/speedDial.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 
 class NoteEditPage extends StatefulWidget {
@@ -28,6 +27,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
 
   @override
   void initState() {
+    super.initState();
     _titleController = TextEditingController(text: widget.title);
     _contentController = TextEditingController(text: widget.content);
 
@@ -58,7 +58,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
 
   void addNote() {
     final idToUse = widget.id ?? Uuid().v4();
-    widget.noteManager!.addNote(
+    widget.noteManager.addNote(
       idToUse,
       _titleController.text,
       _contentController.text,

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:study_forge/pages/noteRelated/noteEditPage.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
-import 'package:study_forge/algorithms/search_note_dialog.dart';
-import 'package:study_forge/customWidgets/floatingSearch.dart';
 
 class FloatingSpeedDial extends StatelessWidget {
   final NoteManager noteManager;
