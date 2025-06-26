@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 import 'package:study_forge/pages/notesPage.dart';
-import 'package:study_forge/pages/noteRelated/noteEditPage.dart';
+import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 
 class ForgeHomePage extends StatefulWidget {
   const ForgeHomePage({super.key});
@@ -11,6 +12,14 @@ class ForgeHomePage extends StatefulWidget {
 }
 
 class _ForgeHomeState extends State<ForgeHomePage> {
+  List<Note> allNotes = [];
+  void loadAllNotes() async {
+    final notes = await NoteManager().getAllNotes();
+    setState(() => allNotes = notes);
+  }
+
+  Set<String> selectedNotes = {};
+  List<Note> searchResults = [];
   Widget _SidebarIcon({
     required IconData icon,
     required VoidCallback onPressed,
@@ -102,8 +111,10 @@ class _ForgeHomeState extends State<ForgeHomePage> {
                     icon: Icons.note_add_outlined,
                     onPressed: () => Navigator.of(context).push(
                       PageRouteBuilder(
-                        pageBuilder: (_, __, ___) =>
-                            NoteEditPage(noteManager: NoteManager()),
+                        pageBuilder: (_, __, ___) => NoteEditPage(
+                          noteManager: NoteManager(),
+                          isMD: false,
+                        ),
                         transitionsBuilder: (_, animation, __, child) =>
                             FadeTransition(opacity: animation, child: child),
                       ),
@@ -146,6 +157,29 @@ class _ForgeHomeState extends State<ForgeHomePage> {
                     },
                     tooltip: "Notes",
                   ),
+                  _SidebarIcon(
+                    icon: Icons.my_library_books,
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  MarkDownEditPage(
+                                    noteManager: NoteManager(),
+                                    isMD: true,
+                                  ),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                );
+                              },
+                        ),
+                      );
+                    },
+                    tooltip: "MarkDownNotes",
+                  ),
                 ],
               ),
               Column(
@@ -166,14 +200,7 @@ class _ForgeHomeState extends State<ForgeHomePage> {
             ],
           ),
         ),
-        body: Padding(
-          padding: EdgeInsets.all(20),
-          child: Text(
-            'Welcome to this "WTF is this app".... just do some random shi-\n\n\nbtw Settings and Folder is out of service, same with Search....<heh>',
-            style: TextStyle(fontSize: 25),
-            textAlign: TextAlign.center,
-          ),
-        ),
+        body: null,
       ),
     );
   }

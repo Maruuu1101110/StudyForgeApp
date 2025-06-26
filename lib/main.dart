@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
+import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 import 'algorithms/navigationObservers.dart';
 import 'package:study_forge/pages/homePage.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';

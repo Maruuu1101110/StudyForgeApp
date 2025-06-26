@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:study_forge/pages/homePage.dart';
-import 'package:study_forge/pages/noteRelated/noteEditPage.dart';
+import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 
 class ForgeDrawer extends StatelessWidget {
@@ -31,7 +31,7 @@ class ForgeDrawer extends StatelessWidget {
                 onPressed: () => Navigator.of(context).push(
                   PageRouteBuilder(
                     pageBuilder: (_, __, ___) =>
-                        NoteEditPage(noteManager: noteManager),
+                        NoteEditPage(noteManager: noteManager, isMD: false),
                     transitionsBuilder: (_, animation, __, child) =>
                         FadeTransition(opacity: animation, child: child),
                   ),

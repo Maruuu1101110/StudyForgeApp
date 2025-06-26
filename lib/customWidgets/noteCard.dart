@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
-import 'package:study_forge/pages/noteRelated/noteEditPage.dart';
+import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
+import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/customWidgets/bookmark.dart';
 
 class NoteCard extends StatefulWidget {
@@ -76,6 +77,18 @@ class _NoteCardState extends State<NoteCard> {
               right: 12,
               child: Row(
                 children: [
+                  Visibility(
+                    visible: widget.note.isMarkDown,
+                    child: Text(
+                      "MD",
+                      style: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   Text(
                     "${widget.note.createdAt?.month ?? "?"}/${widget.note.createdAt?.day ?? "?"}",
                     style: TextStyle(
@@ -113,16 +126,29 @@ class _NoteCardState extends State<NoteCard> {
       widget.onSelectToggle!(widget.note.id); // toggle select
     } else {
       Navigator.of(context).push(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => NoteEditPage(
-            noteManager: NoteManager(),
-            id: widget.note.id,
-            title: widget.note.title,
-            content: widget.note.content,
-          ),
-          transitionsBuilder: (_, anim, __, child) =>
-              FadeTransition(opacity: anim, child: child),
-        ),
+        widget.note.isMarkDown
+            ? PageRouteBuilder(
+                pageBuilder: (_, __, ___) => MarkDownEditPage(
+                  noteManager: NoteManager(),
+                  id: widget.note.id,
+                  title: widget.note.title,
+                  content: widget.note.content,
+                  isMD: widget.note.isMarkDown,
+                ),
+                transitionsBuilder: (_, anim, __, child) =>
+                    FadeTransition(opacity: anim, child: child),
+              )
+            : PageRouteBuilder(
+                pageBuilder: (_, __, ___) => NoteEditPage(
+                  noteManager: NoteManager(),
+                  id: widget.note.id,
+                  title: widget.note.title,
+                  content: widget.note.content,
+                  isMD: widget.note.isMarkDown,
+                ),
+                transitionsBuilder: (_, anim, __, child) =>
+                    FadeTransition(opacity: anim, child: child),
+              ),
       );
     }
   }

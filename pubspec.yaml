@@ -16,6 +16,9 @@ dependencies:
   path_provider: ^2.1.5
   uuid: ^4.5.1
   flutter_multi_select_items: ^0.4.3
+  markdown: ^7.3.0
+  markdown_widget: ^2.3.2+8
+  markdown_editor_plus: ^0.2.15 
 
 dev_dependencies:
   flutter_test:

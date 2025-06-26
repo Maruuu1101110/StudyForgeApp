@@ -8,6 +8,7 @@ class Note {
   final String content;
   final DateTime? createdAt;
   bool isBookmarked;
+  bool isMarkDown;
 
   Note({
     required this.id,
@@ -15,6 +16,7 @@ class Note {
     required this.content,
     this.createdAt,
     this.isBookmarked = false,
+    this.isMarkDown = false,
   });
 
   factory Note.fromMap(Map<String, dynamic> map) {
@@ -26,6 +28,7 @@ class Note {
           ? DateTime.fromMillisecondsSinceEpoch(map['created_at'])
           : null,
       isBookmarked: (map['bookmarked'] ?? 0) == 1,
+      isMarkDown: (map['isMarkDown'] ?? 0) == 1,
     );
   }
 
@@ -36,6 +39,7 @@ class Note {
       'content': content,
       'created_at': createdAt?.millisecondsSinceEpoch,
       'bookmarked': isBookmarked ? 1 : 0,
+      'isMarkDown': isMarkDown ? 1 : 0,
     };
   }
 }
@@ -62,14 +66,20 @@ class NoteManager {
             title TEXT,
             content TEXT,
             created_at INTEGER,
-            bookmarked INTEGER
+            bookmarked INTEGER,
+            isMarkDown INTEGER
           )
         ''');
       },
     );
   }
 
-  Future<void> addNote(String id, String title, String content) async {
+  Future<void> addNote(
+    String id,
+    String title,
+    String content,
+    bool isMarkDown,
+  ) async {
     final db = await database;
 
     final trimmedTitle = title.trim();
@@ -86,6 +96,7 @@ class NoteManager {
       content: trimmedContent,
       createdAt: DateTime.now(),
       isBookmarked: false,
+      isMarkDown: isMarkDown,
     );
 
     await db.insert(
@@ -116,11 +127,16 @@ class NoteManager {
     return maps.map((map) => Note.fromMap(map)).toList();
   }
 
-  Future<void> updateNote(String id, String newTitle, String newContent) async {
+  Future<void> updateNote(
+    String id,
+    String newTitle,
+    String newContent,
+    bool isMarkDown,
+  ) async {
     final db = await database;
     await db.update(
       'notes',
-      {'title': newTitle, 'content': newContent},
+      {'title': newTitle, 'content': newContent, 'isMarkDown': isMarkDown},
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -165,6 +181,15 @@ class NoteManager {
     print(result);
     await db.execute('''
     ALTER TABLE notes ADD COLUMN isBookmarked INTEGER DEFAULT 0
+  ''');
+  }
+
+  Future<void> migrateDatabaseAddMarkdown() async {
+    final db = await database;
+    final result = await db.rawQuery('PRAGMA table_info(notes)');
+    print(result);
+    await db.execute('''
+    ALTER TABLE notes ADD COLUMN isMarkDown INTEGER DEFAULT 0
   ''');
   }
 }

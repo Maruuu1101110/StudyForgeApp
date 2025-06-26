@@ -7,6 +7,7 @@ class NoteEditPage extends StatefulWidget {
   final String? id;
   final String? title;
   final String? content;
+  final bool isMD;
 
   const NoteEditPage({
     super.key,
@@ -14,6 +15,7 @@ class NoteEditPage extends StatefulWidget {
     this.id,
     this.title,
     this.content,
+    required this.isMD,
   });
 
   @override
@@ -62,6 +64,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
       idToUse,
       _titleController.text,
       _contentController.text,
+      widget.isMD,
     );
   }
 
@@ -95,11 +98,22 @@ class _NoteEditPageState extends State<NoteEditPage> {
                     final id = widget.id ?? Uuid().v4();
                     final title = _titleController.text.trim();
                     final content = _contentController.text.trim();
+                    final isMD = false;
 
                     if (widget.id != null) {
-                      await widget.noteManager.updateNote(id, title, content);
+                      await widget.noteManager.updateNote(
+                        id,
+                        title,
+                        content,
+                        isMD,
+                      );
                     } else {
-                      await widget.noteManager.addNote(id, title, content);
+                      await widget.noteManager.addNote(
+                        id,
+                        title,
+                        content,
+                        isMD,
+                      );
                     }
 
                     Navigator.pop(context);
