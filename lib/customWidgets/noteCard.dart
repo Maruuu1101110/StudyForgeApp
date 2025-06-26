@@ -26,6 +26,7 @@ class _NoteCardState extends State<NoteCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
+      clipBehavior: Clip.antiAlias,
       key: ValueKey(widget.note.id),
       elevation: widget.isSelected ? 4 : 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -39,7 +40,12 @@ class _NoteCardState extends State<NoteCard> {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(
+                top: 30,
+                left: 16,
+                right: 16,
+                bottom: 16,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -64,8 +70,11 @@ class _NoteCardState extends State<NoteCard> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${widget.note.content.split(' ').take(10).join(' ')}...',
-                    style: const TextStyle(fontSize: 16, color: Colors.white70),
+                    widget.note.content,
+                    maxLines:
+                        3, // Approximate height control: # of lines visible
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 14, color: Colors.white70),
                   ),
                 ],
               ),

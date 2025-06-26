@@ -177,24 +177,30 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
                   selectionHandleColor: Colors.amber,
                 ),
               ),
-              child: TextFormField(
-                controller: _titleController,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 35,
-                ), // 🔥 makes the input text amber
-                decoration: InputDecoration(
-                  hintText: "Title",
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(.5)),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 10,
-                  ),
-                ),
-              ),
+              child: isOnRead
+                  ? SizedBox(width: 10)
+                  : TextFormField(
+                      controller: _titleController,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 35,
+                      ), // 🔥 makes the input text amber
+                      decoration: InputDecoration(
+                        label: Text("Title"),
+                        labelStyle: TextStyle(fontSize: 35),
+                        floatingLabelStyle: TextStyle(
+                          fontSize: 18,
+                          color: Colors.amber,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 0,
+                        ),
+                      ),
+                    ),
             ),
-            Divider(thickness: 1, indent: 10, endIndent: 10),
+            if (!isOnRead) Divider(thickness: 1, indent: 10, endIndent: 10),
             Expanded(
               child: Theme(
                 data: Theme.of(context).copyWith(
@@ -204,21 +210,44 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
                     selectionHandleColor: Colors.amber,
                   ),
                 ),
-                child: MarkdownField(
-                  controller: _contentController,
-                  expands: true,
-                  maxLines: null,
-                  minLines: null,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: "Type something...",
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 0,
-                    ),
-                  ),
+                child: Expanded(
+                  child: isOnRead
+                      ? MarkdownWidget(
+                          config: MarkdownConfig.darkConfig,
+                          padding: EdgeInsets.all(10),
+                          data: _contentController.text,
+                        )
+                      : Theme(
+                          data: Theme.of(context).copyWith(
+                            textSelectionTheme: const TextSelectionThemeData(
+                              cursorColor: Colors.amber,
+                              selectionColor: Color(0x44FFC107),
+                              selectionHandleColor: Colors.amber,
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              MarkdownField(
+                                controller: _contentController,
+                                expands: true,
+                                maxLines: null,
+                                minLines: null,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: InputDecoration(
+                                  hintText: "Type something...",
+                                  hintStyle: TextStyle(
+                                    color: Colors.white.withOpacity(0.5),
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                 ),
               ),
             ),
