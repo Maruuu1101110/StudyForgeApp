@@ -6,6 +6,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // custom widgets
 import 'package:study_forge/customWidgets/markdownShortcut.dart';
+import 'package:study_forge/components/wordLimiter.dart';
 
 // algorithms
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
@@ -187,26 +188,7 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
               ),
               child: isOnRead
                   ? SizedBox(width: 10)
-                  : TextFormField(
-                      controller: _titleController,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 35,
-                      ), // 🔥 makes the input text amber
-                      decoration: InputDecoration(
-                        label: Text("Title"),
-                        labelStyle: TextStyle(fontSize: 35),
-                        floatingLabelStyle: TextStyle(
-                          fontSize: 18,
-                          color: Colors.amber,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 0,
-                        ),
-                      ),
-                    ),
+                  : TitleField(controller: _titleController, wordLimit: 5),
             ),
             if (!isOnRead) Divider(thickness: 1, indent: 10, endIndent: 10),
             Expanded(

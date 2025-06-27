@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 import 'package:study_forge/customWidgets/noteShortcut.dart';
+import 'package:study_forge/components/wordLimiter.dart';
 
 class NoteEditPage extends StatefulWidget {
   final NoteManager noteManager;
@@ -150,22 +151,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
                   selectionHandleColor: Colors.amber,
                 ),
               ),
-              child: TextFormField(
-                controller: _titleController,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 35,
-                ), // 🔥 makes the input text amber
-                decoration: InputDecoration(
-                  hintText: "Title",
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(.5)),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 10,
-                  ),
-                ),
-              ),
+              child: TitleField(controller: _titleController, wordLimit: 5),
             ),
             Divider(thickness: 1, indent: 10, endIndent: 10),
             Expanded(
