@@ -137,8 +137,7 @@ class _NoteShortcutBarState extends State<NoteShortcutBar> {
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(30, 30, 30, 1),
-        border: Border.all(width: 1, color: Colors.amber),
+        color: Theme.of(context).appBarTheme.backgroundColor,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(15),
           topRight: Radius.circular(15),
