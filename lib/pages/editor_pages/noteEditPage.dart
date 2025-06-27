@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/customWidgets/noteShortcut.dart';
 
 class NoteEditPage extends StatefulWidget {
   final NoteManager noteManager;
@@ -198,6 +199,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
           ],
         ),
       ),
+      bottomSheet: NoteShortcutBar(controller: _contentController),
     );
   }
 }

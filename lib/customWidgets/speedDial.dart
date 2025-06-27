@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 
 class FloatingSpeedDial extends StatelessWidget {
-  final NoteManager noteManager;
-  final VoidCallback? onSearchTap;
-
-  const FloatingSpeedDial({
-    super.key,
-    required this.noteManager,
-    required this.onSearchTap,
-  });
+  const FloatingSpeedDial({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +29,29 @@ class FloatingSpeedDial extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               PageRouteBuilder(
                 pageBuilder: (_, __, ___) =>
-                    NoteEditPage(noteManager: noteManager, isMD: false),
+                    NoteEditPage(noteManager: NoteManager(), isMD: false),
                 transitionsBuilder: (_, animation, __, child) =>
                     FadeTransition(opacity: animation, child: child),
               ),
             ),
           ),
+
+          SpeedDialChild(
+            backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
+            labelBackgroundColor: Colors.transparent,
+            labelShadow: [],
+            child: const Icon(Icons.note_alt_outlined, color: Colors.amber),
+            label: 'New MD Note',
+            onTap: () => Navigator.of(context).push(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) =>
+                    MarkDownEditPage(noteManager: NoteManager(), isMD: true),
+                transitionsBuilder: (_, animation, __, child) =>
+                    FadeTransition(opacity: animation, child: child),
+              ),
+            ),
+          ),
+
           SpeedDialChild(
             backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
             labelBackgroundColor: Colors.transparent,
@@ -49,13 +60,14 @@ class FloatingSpeedDial extends StatelessWidget {
             label: 'Open Folder',
             onTap: () => print('Open Folder tapped'),
           ),
+
           SpeedDialChild(
             child: const Icon(Icons.search, color: Colors.amber),
             label: 'Search Notes',
             labelBackgroundColor: Colors.transparent,
             labelShadow: [],
             backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
-            onTap: () => onSearchTap?.call(),
+            onTap: () => print("Pressed Search Notes"),
           ),
         ],
       ),

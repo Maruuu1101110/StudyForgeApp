@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import '/algorithms/noteSearchAlgo.dart';
+
+// custom widgets
+import '../customWidgets/sideBar.dart';
 import '../customWidgets/noteCard.dart';
 import '../customWidgets/speedDial.dart';
+
+// algorithms
+import '/algorithms/noteSearchAlgo.dart';
 import 'package:study_forge/algorithms/navigationObservers.dart';
-import '../customWidgets/sideBar.dart';
+
+// pages
 
 class ForgeNotesPage extends StatefulWidget {
   const ForgeNotesPage({super.key});
@@ -157,10 +163,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
         return shouldExit ?? false;
       },
       child: Scaffold(
-        floatingActionButton: FloatingSpeedDial(
-          noteManager: noteManager,
-          onSearchTap: openSearch,
-        ),
+        floatingActionButton: FloatingSpeedDial(),
         appBar: AppBar(
           scrolledUnderElevation: 0,
           backgroundColor: const Color.fromARGB(255, 30, 30, 30),
@@ -251,10 +254,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
             ],
           ],
         ),
-        drawer: ForgeDrawer(
-          onNewNote: () => print('Create new note'),
-          onBrowseFiles: () => print('Open file manager'),
-        ),
+        drawer: ForgeDrawer(selectedTooltip: "Notes"),
 
         body: Padding(
           padding: EdgeInsetsGeometry.all(10),

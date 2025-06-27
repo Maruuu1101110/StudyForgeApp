@@ -2,15 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:study_forge/pages/homePage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/pages/notesPage.dart';
 
 class ForgeDrawer extends StatelessWidget {
-  final VoidCallback onNewNote;
-  final VoidCallback onBrowseFiles;
+  final String? selectedTooltip;
+  final VoidCallback? onNewNote;
+  final VoidCallback? onBrowseFiles;
+  final VoidCallback? onHome;
+  final VoidCallback? onNotePage;
+  final VoidCallback? onSettings;
 
   ForgeDrawer({
     super.key,
-    required this.onNewNote,
-    required this.onBrowseFiles,
+    this.selectedTooltip,
+    this.onNewNote,
+    this.onBrowseFiles,
+    this.onHome,
+    this.onNotePage,
+    this.onSettings,
   });
 
   final noteManager = NoteManager();
@@ -28,19 +37,21 @@ class ForgeDrawer extends StatelessWidget {
               const SizedBox(height: 40),
               _SidebarIcon(
                 icon: Icons.note_add_outlined,
-                onPressed: () => Navigator.of(context).push(
-                  PageRouteBuilder(
-                    pageBuilder: (_, __, ___) =>
-                        NoteEditPage(noteManager: noteManager, isMD: false),
-                    transitionsBuilder: (_, animation, __, child) =>
-                        FadeTransition(opacity: animation, child: child),
-                  ),
-                ),
+                onPressed:
+                    onNewNote ??
+                    () => Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) =>
+                            NoteEditPage(noteManager: noteManager, isMD: false),
+                        transitionsBuilder: (_, animation, __, child) =>
+                            FadeTransition(opacity: animation, child: child),
+                      ),
+                    ),
                 tooltip: "New Note",
               ),
               _SidebarIcon(
                 icon: Icons.folder_outlined,
-                onPressed: onBrowseFiles,
+                onPressed: onBrowseFiles ?? () {},
                 tooltip: "Browse Files",
               ),
 
@@ -49,21 +60,30 @@ class ForgeDrawer extends StatelessWidget {
               _SidebarIcon(
                 icon: Icons.home,
                 tooltip: "Home",
-                onPressed: () {
-                  Navigator.of(context).pushReplacement(
-                    PageRouteBuilder(
-                      pageBuilder: (_, __, ___) => const ForgeHomePage(),
-                      transitionsBuilder: (_, animation, __, child) =>
-                          FadeTransition(opacity: animation, child: child),
+                isSelected: selectedTooltip == "Home",
+                onPressed:
+                    onHome ??
+                    () => Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) => ForgeHomePage(),
+                        transitionsBuilder: (_, animation, __, child) =>
+                            FadeTransition(opacity: animation, child: child),
+                      ),
                     ),
-                  );
-                },
               ),
               _SidebarIcon(
                 icon: Icons.notes,
                 tooltip: "Notes",
-                isSelected: true,
-                onPressed: () {},
+                isSelected: selectedTooltip == "Notes",
+                onPressed:
+                    onNotePage ??
+                    () => Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) => ForgeNotesPage(),
+                        transitionsBuilder: (_, animation, __, child) =>
+                            FadeTransition(opacity: animation, child: child),
+                      ),
+                    ),
               ),
             ],
           ),
@@ -75,6 +95,7 @@ class ForgeDrawer extends StatelessWidget {
               _SidebarIcon(
                 icon: Icons.settings_outlined,
                 tooltip: "Settings",
+                isSelected: selectedTooltip == "Settings",
                 onPressed: () {},
               ),
               const SizedBox(height: 20),

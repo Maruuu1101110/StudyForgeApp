@@ -1,12 +1,15 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
-import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
-import 'algorithms/navigationObservers.dart';
-import 'package:study_forge/pages/homePage.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+// custom widgets
+
+// algorithms
+import 'algorithms/navigationObservers.dart';
+
+// pages
+import 'package:study_forge/pages/homePage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +35,9 @@ class StudyForge extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(
         useMaterial3: true,
+        bottomSheetTheme: BottomSheetThemeData(
+          backgroundColor: Colors.transparent,
+        ),
         textTheme: ThemeData.dark().textTheme.apply(
           bodyColor: Colors.white,
           displayColor: Colors.white,

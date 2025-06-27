@@ -1,10 +1,18 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:study_forge/customWidgets/bookmark.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+// custom widgets
+import 'package:study_forge/customWidgets/markdownShortcut.dart';
+
+// algorithms
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/algorithms/smart_md_editor.dart';
+
 //markdown packages //
 import 'package:markdown_widget/markdown_widget.dart';
-import 'package:markdown_editor_plus/markdown_editor_plus.dart';
 
 class MarkDownEditPage extends StatefulWidget {
   final NoteManager noteManager;
@@ -87,7 +95,7 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
           builder: (context) {
             return IconButton(
               icon: const Icon(
-                Icons.navigate_before_rounded,
+                Icons.navigate_before,
                 color: Colors.white,
                 size: 40,
               ),
@@ -115,8 +123,8 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
               transitionBuilder: (child, animation) =>
                   FadeTransition(opacity: animation, child: child),
               child: isOnRead
-                  ? Icon(Icons.edit, color: Colors.amber, size: 25)
-                  : Icon(Icons.read_more, color: Colors.amber, size: 30),
+                  ? Icon(Icons.edit_note_rounded, color: Colors.amber, size: 30)
+                  : Icon(Icons.remove_red_eye, color: Colors.amber, size: 25),
             ),
           ),
 
@@ -152,12 +160,12 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
               transitionBuilder: (child, animation) =>
                   FadeTransition(opacity: animation, child: child),
               child: Padding(
-                padding: EdgeInsets.only(right: 10),
-                child: Icon(
-                  Icons.save,
+                padding: EdgeInsets.only(right: 15),
+                child: FaIcon(
+                  FontAwesomeIcons.save,
                   key: ValueKey<bool>(isSaveEnabled), // forces switch
                   color: isSaveEnabled ? Colors.amber : Colors.grey,
-                  size: 30,
+                  size: 23,
                 ),
               ),
             ),
@@ -225,27 +233,8 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
                               selectionHandleColor: Colors.amber,
                             ),
                           ),
-                          child: Stack(
-                            children: [
-                              MarkdownField(
-                                controller: _contentController,
-                                expands: true,
-                                maxLines: null,
-                                minLines: null,
-                                style: const TextStyle(color: Colors.white),
-                                decoration: InputDecoration(
-                                  hintText: "Type something...",
-                                  hintStyle: TextStyle(
-                                    color: Colors.white.withOpacity(0.5),
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 0,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: SmartMarkdownEditor(
+                            controller: _contentController,
                           ),
                         ),
                 ),
@@ -254,6 +243,10 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
           ],
         ),
       ),
+
+      bottomSheet: !isOnRead
+          ? SafeArea(child: MarkdownShortcutBar(controller: _contentController))
+          : null,
     );
   }
 }

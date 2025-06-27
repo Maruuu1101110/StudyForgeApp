@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+// algorithms
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
-import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
-import 'package:study_forge/pages/notesPage.dart';
-import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
+
+// custom widgets
+import 'package:study_forge/customWidgets/sideBar.dart';
+
+// pages
 
 class ForgeHomePage extends StatefulWidget {
   const ForgeHomePage({super.key});
@@ -20,32 +23,6 @@ class _ForgeHomeState extends State<ForgeHomePage> {
 
   Set<String> selectedNotes = {};
   List<Note> searchResults = [];
-  Widget _SidebarIcon({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required String tooltip,
-    bool isSelected = false,
-  }) {
-    return IconButton(
-      isSelected: true,
-      icon: Icon(icon, color: isSelected ? Colors.amber : Colors.white),
-      onPressed: onPressed,
-      tooltip: tooltip,
-      splashRadius: 24,
-      padding: const EdgeInsets.all(8),
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.resolveWith<Color?>((
-          Set<WidgetState> states,
-        ) {
-          return isSelected ? Colors.white12 : Colors.transparent;
-        }),
-        shape: WidgetStateProperty.all(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        overlayColor: WidgetStateProperty.all(Colors.white10),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,108 +75,7 @@ class _ForgeHomeState extends State<ForgeHomePage> {
             },
           ),
         ),
-        drawer: Drawer(
-          backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
-          width: 60,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                children: [
-                  const SizedBox(height: 40),
-                  _SidebarIcon(
-                    icon: Icons.note_add_outlined,
-                    onPressed: () => Navigator.of(context).push(
-                      PageRouteBuilder(
-                        pageBuilder: (_, __, ___) => NoteEditPage(
-                          noteManager: NoteManager(),
-                          isMD: false,
-                        ),
-                        transitionsBuilder: (_, animation, __, child) =>
-                            FadeTransition(opacity: animation, child: child),
-                      ),
-                    ),
-                    tooltip: "New Note",
-                  ),
-                  _SidebarIcon(
-                    icon: Icons.folder_outlined,
-                    onPressed: () {},
-                    tooltip: "Browse Files",
-                  ),
-                  const Divider(
-                    color: Colors.white24,
-                    indent: 10,
-                    endIndent: 10,
-                  ),
-                  _SidebarIcon(
-                    icon: Icons.home,
-                    onPressed: () {},
-                    tooltip: "Home",
-                    isSelected: true,
-                  ),
-                  _SidebarIcon(
-                    icon: Icons.notes,
-                    onPressed: () {
-                      Navigator.of(context).pushReplacement(
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  ForgeNotesPage(),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                );
-                              },
-                        ),
-                      );
-                    },
-                    tooltip: "Notes",
-                  ),
-                  _SidebarIcon(
-                    icon: Icons.my_library_books,
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        PageRouteBuilder(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  MarkDownEditPage(
-                                    noteManager: NoteManager(),
-                                    isMD: true,
-                                  ),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                );
-                              },
-                        ),
-                      );
-                    },
-                    tooltip: "MarkDownNotes",
-                  ),
-                ],
-              ),
-              Column(
-                children: [
-                  const Divider(
-                    color: Colors.white24,
-                    indent: 10,
-                    endIndent: 10,
-                  ),
-                  _SidebarIcon(
-                    icon: Icons.settings_outlined,
-                    onPressed: () {},
-                    tooltip: "Settings",
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ],
-          ),
-        ),
+        drawer: ForgeDrawer(selectedTooltip: "Home"),
         body: null,
       ),
     );
