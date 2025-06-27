@@ -28,12 +28,13 @@ class StudyForge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color mainColor = const Color.fromARGB(255, 30, 30, 30);
+    Color appBarColor = const Color.fromARGB(255, 15, 15, 15);
     return MaterialApp(
       navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
+        primaryColorDark: appBarColor,
         useMaterial3: true,
         bottomSheetTheme: BottomSheetThemeData(
           backgroundColor: Colors.transparent,
@@ -43,7 +44,7 @@ class StudyForge extends StatelessWidget {
           displayColor: Colors.white,
           fontFamily: "Petrona",
         ),
-        scaffoldBackgroundColor: const Color.fromRGBO(30, 30, 30, 1.0),
+        scaffoldBackgroundColor: appBarColor,
         appBarTheme: AppBarTheme(
           titleTextStyle: TextStyle(
             color: Colors.white,
@@ -51,7 +52,7 @@ class StudyForge extends StatelessWidget {
             fontWeight: FontWeight.bold,
             fontFamily: "Petrona",
           ),
-          backgroundColor: mainColor,
+          backgroundColor: appBarColor,
         ),
       ),
       home: ForgeHomePage(),
