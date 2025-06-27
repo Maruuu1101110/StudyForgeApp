@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import '../customWidgets/sideBar.dart';
 import '../customWidgets/noteCard.dart';
 import '../customWidgets/speedDial.dart';
+import 'package:study_forge/components/animatedPopIcon.dart';
 
 // algorithms
 import '/algorithms/noteSearchAlgo.dart';
@@ -166,7 +167,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
         floatingActionButton: FloatingSpeedDial(),
         appBar: AppBar(
           scrolledUnderElevation: 0,
-          backgroundColor: const Color.fromARGB(255, 30, 30, 30),
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
           title: const Text("Notes"),
           titleSpacing: 0,
           leading: Builder(
@@ -183,72 +184,80 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
           ),
           actions: [
             if (isSelectionMode) ...[
-              IconButton(
-                icon: const Icon(Icons.cancel, color: Colors.amber, size: 30),
-                tooltip: 'Cancel selection',
-                onPressed: () {
-                  setState(() {
-                    selectedNotes.clear(); // 🔁 This should rebuild the screen
-                  });
-                },
+              AnimatedPopIcon(
+                child: IconButton(
+                  icon: const Icon(Icons.cancel, color: Colors.amber, size: 30),
+                  tooltip: 'Cancel selection',
+                  onPressed: () {
+                    setState(() {
+                      selectedNotes
+                          .clear(); // 🔁 This should rebuild the screen
+                    });
+                  },
+                ),
               ),
 
               Padding(
                 padding: EdgeInsets.only(right: 10),
-                child: IconButton(
-                  iconSize: 30,
-                  icon: const Icon(Icons.delete, color: Colors.redAccent),
-                  tooltip: "Delete Selected Notes?",
+                child: AnimatedPopIcon(
+                  child: IconButton(
+                    iconSize: 30,
+                    icon: const Icon(Icons.delete, color: Colors.redAccent),
+                    tooltip: "Delete Selected Notes?",
 
-                  onPressed: () async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
-                        title: const Text("Delete Selected Notes?"),
-                        content: Text(
-                          "Are you sure you want to delete ${selectedNotes.length} note(s)?",
-                          style: TextStyle(fontSize: 16),
-                        ),
-                        actions: [
-                          TextButton(
-                            child: const Text(
-                              "Cancel",
-                              style: TextStyle(
-                                color: Colors.amber,
-                                fontSize: 16,
+                    onPressed: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
+                          title: const Text("Delete Selected Notes?"),
+                          content: Text(
+                            "Are you sure you want to delete ${selectedNotes.length} note(s)?",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          actions: [
+                            TextButton(
+                              child: const Text(
+                                "Cancel",
+                                style: TextStyle(
+                                  color: Colors.amber,
+                                  fontSize: 16,
+                                ),
                               ),
+                              onPressed: () => Navigator.of(ctx).pop(false),
                             ),
-                            onPressed: () => Navigator.of(ctx).pop(false),
-                          ),
-                          TextButton(
-                            child: const Text(
-                              "Delete",
-                              style: TextStyle(color: Colors.red, fontSize: 16),
+                            TextButton(
+                              child: const Text(
+                                "Delete",
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              onPressed: () => Navigator.of(
+                                ctx,
+                              ).pop(true), // ✅ just pop true here
                             ),
-                            onPressed: () => Navigator.of(
-                              ctx,
-                            ).pop(true), // ✅ just pop true here
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (confirmed == true) {
-                      for (var id in selectedNotes) {
-                        await noteManager.deleteNote(id);
-                      }
-
-                      await loadNotes(); // ✅ now it refreshes after deletion
-                      setState(
-                        () => selectedNotes.clear(),
-                      ); // 🧼 clear selection
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Notes deleted")),
+                          ],
+                        ),
                       );
-                    }
-                  },
+
+                      if (confirmed == true) {
+                        for (var id in selectedNotes) {
+                          await noteManager.deleteNote(id);
+                        }
+
+                        await loadNotes(); // ✅ now it refreshes after deletion
+                        setState(
+                          () => selectedNotes.clear(),
+                        ); // 🧼 clear selection
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Notes deleted")),
+                        );
+                      }
+                    },
+                  ),
                 ),
               ),
             ],

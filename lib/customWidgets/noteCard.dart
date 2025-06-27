@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/components/animatedPopIcon.dart';
 import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/customWidgets/bookmark.dart';
@@ -50,13 +51,22 @@ class _NoteCardState extends State<NoteCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Selection indicator + Title
+                  SizedBox(height: 10),
                   Row(
                     children: [
                       widget.isSelected
-                          ? const Icon(Icons.check_circle, color: Colors.amber)
-                          : const SizedBox(width: 30),
+                          ? const AnimatedPopIcon(
+                              child: Icon(
+                                Icons.check_circle,
+                                color: Colors.amber,
+                              ),
+                              duration: Duration(milliseconds: 1000),
+                            )
+                          : const SizedBox(width: 0),
                       const SizedBox(width: 8),
-                      Expanded(
+                      // Expanded(
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: 200),
                         child: Text(
                           widget.note.title,
                           style: const TextStyle(
@@ -66,9 +76,11 @@ class _NoteCardState extends State<NoteCard> {
                           ),
                         ),
                       ),
+                      // ),
                     ],
                   ),
                   const SizedBox(height: 8),
+
                   Text(
                     widget.note.content,
                     maxLines:
