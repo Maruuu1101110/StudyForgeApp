@@ -6,8 +6,9 @@ import '../components/noteCard.dart';
 import '../components/speedDial.dart';
 import 'package:study_forge/components/animatedPopIcon.dart';
 
-// algorithms
-import '/algorithms/noteSearchAlgo.dart';
+// database
+import 'package:study_forge/models/note_model.dart';
+import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/utils/navigationObservers.dart';
 
 // pages
@@ -163,7 +164,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
         return shouldExit ?? false;
       },
       child: Scaffold(
-        floatingActionButton: FloatingSpeedDial(),
+        floatingActionButton: FloatingSpeedDial(isNotes: true),
         appBar: AppBar(
           scrolledUnderElevation: 0,
           backgroundColor: Theme.of(context).appBarTheme.backgroundColor,

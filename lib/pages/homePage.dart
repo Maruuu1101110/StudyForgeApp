@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-// algorithms
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+// database
+import 'package:study_forge/models/note_model.dart';
+import 'package:study_forge/tables/note_table.dart';
 
 // custom widgets
 import 'package:study_forge/components/sideBar.dart';

@@ -6,8 +6,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:study_forge/components/markdownShortcut.dart';
 import 'package:study_forge/components/wordLimiter.dart';
 
-// algorithms
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+// database
+
+import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/components/smart_md_editor.dart';
 
 //markdown packages //
