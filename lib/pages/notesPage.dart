@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 // custom widgets
-import '../customWidgets/sideBar.dart';
-import '../customWidgets/noteCard.dart';
-import '../customWidgets/speedDial.dart';
+import '../components/sideBar.dart';
+import '../components/noteCard.dart';
+import '../components/speedDial.dart';
 import 'package:study_forge/components/animatedPopIcon.dart';
 
 // algorithms
 import '/algorithms/noteSearchAlgo.dart';
-import 'package:study_forge/algorithms/navigationObservers.dart';
+import 'package:study_forge/utils/navigationObservers.dart';
 
 // pages
 

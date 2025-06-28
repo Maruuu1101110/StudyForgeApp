@@ -7,7 +7,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 // custom widgets
 
 // algorithms
-import 'algorithms/navigationObservers.dart';
+import 'utils/navigationObservers.dart';
 
 // pages
 import 'package:study_forge/pages/homePage.dart';

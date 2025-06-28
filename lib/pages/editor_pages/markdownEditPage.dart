@@ -3,12 +3,12 @@ import 'package:uuid/uuid.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // custom widgets
-import 'package:study_forge/customWidgets/markdownShortcut.dart';
+import 'package:study_forge/components/markdownShortcut.dart';
 import 'package:study_forge/components/wordLimiter.dart';
 
 // algorithms
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
-import 'package:study_forge/algorithms/smart_md_editor.dart';
+import 'package:study_forge/components/smart_md_editor.dart';
 
 //markdown packages //
 import 'package:markdown_widget/markdown_widget.dart';

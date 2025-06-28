@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 
 // custom widgets
-import 'package:study_forge/customWidgets/sideBar.dart';
+import 'package:study_forge/components/sideBar.dart';
 
 // pages
 
