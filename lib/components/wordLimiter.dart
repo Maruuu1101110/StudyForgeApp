@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 class TitleField extends StatefulWidget {
   final int wordLimit;
   final TextEditingController controller;
-  const TitleField({Key? key, required this.controller, this.wordLimit = 5})
-    : super(key: key);
+  const TitleField({super.key, required this.controller, this.wordLimit = 5});
 
   @override
   State<TitleField> createState() => _TitleFieldState();

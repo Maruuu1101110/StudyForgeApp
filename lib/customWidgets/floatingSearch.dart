@@ -103,7 +103,7 @@ class _FloatingSearchOverlayState extends State<FloatingSearchOverlay> {
                           style: const TextStyle(color: Colors.white),
                         ),
                         subtitle: Text(
-                          note.content.split(" ").take(10).join(" ") + "...",
+                          "${note.content.split(" ").take(10).join(" ")}...",
                           style: const TextStyle(color: Colors.white54),
                         ),
                         onTap: () {

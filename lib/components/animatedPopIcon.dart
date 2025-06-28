@@ -5,10 +5,10 @@ class AnimatedPopIcon extends StatefulWidget {
   final Duration duration;
 
   const AnimatedPopIcon({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 500),
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedPopIcon> createState() => _AnimatedPopIconState();

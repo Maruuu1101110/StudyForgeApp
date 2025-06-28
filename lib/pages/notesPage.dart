@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 
 // custom widgets
 import '../customWidgets/sideBar.dart';

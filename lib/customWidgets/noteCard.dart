@@ -56,11 +56,11 @@ class _NoteCardState extends State<NoteCard> {
                     children: [
                       widget.isSelected
                           ? const AnimatedPopIcon(
+                              duration: Duration(milliseconds: 1000),
                               child: Icon(
                                 Icons.check_circle,
                                 color: Colors.amber,
                               ),
-                              duration: Duration(milliseconds: 1000),
                             )
                           : const SizedBox(width: 0),
                       const SizedBox(width: 8),
