@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+
+// database
+import 'package:study_forge/tables/note_table.dart';
+
+// pages
 import 'package:study_forge/pages/homePage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 import 'package:study_forge/pages/notesPage.dart';
+
+// dev | debug
+import 'package:study_forge/feat_reminder/reminderPage.dart';
 
 class ForgeDrawer extends StatelessWidget {
   final String? selectedTooltip;
@@ -80,6 +87,20 @@ class ForgeDrawer extends StatelessWidget {
                     () => Navigator.of(context).push(
                       PageRouteBuilder(
                         pageBuilder: (_, __, ___) => ForgeNotesPage(),
+                        transitionsBuilder: (_, animation, __, child) =>
+                            FadeTransition(opacity: animation, child: child),
+                      ),
+                    ),
+              ),
+              _SidebarIcon(
+                icon: Icons.checklist,
+                tooltip: "Reminders",
+                isSelected: selectedTooltip == "Reminders",
+                onPressed:
+                    onNotePage ??
+                    () => Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) => ForgeReminderPage(),
                         transitionsBuilder: (_, animation, __, child) =>
                             FadeTransition(opacity: animation, child: child),
                       ),

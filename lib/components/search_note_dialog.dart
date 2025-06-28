@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../algorithms/noteSearchAlgo.dart'; // if you're doing noteManager stuff
+import 'package:study_forge/tables/note_table.dart';
 
 Future<void> showNoteSearchDialog(
   BuildContext context,

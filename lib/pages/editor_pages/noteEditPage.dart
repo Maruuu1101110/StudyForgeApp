@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/components/noteShortcut.dart';
 import 'package:study_forge/components/wordLimiter.dart';
 
