@@ -3,7 +3,7 @@ import 'package:study_forge/algorithms/noteSearchAlgo.dart';
 import 'package:study_forge/components/animatedPopIcon.dart';
 import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
-import 'package:study_forge/customWidgets/bookmark.dart';
+import 'package:study_forge/components/bookmark.dart';
 
 class NoteCard extends StatefulWidget {
   final Note note;
@@ -64,6 +64,7 @@ class _NoteCardState extends State<NoteCard> {
                             )
                           : const SizedBox(width: 0),
                       const SizedBox(width: 8),
+
                       // Expanded(
                       ConstrainedBox(
                         constraints: BoxConstraints(maxWidth: 200),

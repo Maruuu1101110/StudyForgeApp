@@ -1,16 +1,15 @@
 # study_forge
 
-A new Flutter project.
+Study Forge is a study tool app that I made for personal use, it contains simple features like note taking and supports md file reading and configuration.
+It is still in its early stages hence the lack of features but here are the features I plan to add on future updates of this app:
 
-## Getting Started
+- Notepad feature: This one is already implemented along with the MarkDown file support.
+- Smart Reminder and Scheduling feature.
+- PDF, PPT, DOCS, etc... file viewer.
+- Folder and File Manager system.
+- Study Session / Study Page: A page dedicated for zen | study time.
 
-This project is a starting point for a Flutter application.
+... Other feature may come up along the way as I enhance this app of mine to fit my personal needs.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Contributions
+You can freely pull a request if you find some ideas that might fit this app.
