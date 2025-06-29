@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
+import 'package:study_forge/pages/editor_pages/reminderEditPage.dart';
 
 import 'package:study_forge/tables/note_table.dart';
+import 'package:study_forge/tables/reminder_table.dart';
 
 class FloatingSpeedDial extends StatelessWidget {
   final bool? isNotes;
@@ -64,7 +66,14 @@ class FloatingSpeedDial extends StatelessWidget {
             labelShadow: [],
             child: const Icon(Icons.note_alt_outlined, color: Colors.amber),
             label: 'Add Reminder',
-            onTap: () {},
+            onTap: () => Navigator.of(context).push(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) =>
+                    ReminderEditPage(reminderManager: ReminderManager()),
+                transitionsBuilder: (_, animation, __, child) =>
+                    FadeTransition(opacity: animation, child: child),
+              ),
+            ),
           ),
 
           SpeedDialChild(
