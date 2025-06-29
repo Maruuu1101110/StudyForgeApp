@@ -1,31 +1,27 @@
 import 'package:flutter/material.dart';
-
-// database
+import 'package:study_forge/pages/homePage.dart';
+import 'package:study_forge/pages/notesPage.dart';
+import 'package:study_forge/pages/reminderPage.dart';
+import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/tables/note_table.dart';
 
-// pages
-import 'package:study_forge/pages/homePage.dart';
-import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
-import 'package:study_forge/pages/notesPage.dart';
-
-// dev | debug
-import 'package:study_forge/feat_reminder/reminderPage.dart';
-
 class ForgeDrawer extends StatelessWidget {
-  final String? selectedTooltip;
+  final String selectedTooltip;
   final VoidCallback? onNewNote;
   final VoidCallback? onBrowseFiles;
   final VoidCallback? onHome;
   final VoidCallback? onNotePage;
+  final VoidCallback? onReminderPage;
   final VoidCallback? onSettings;
 
   ForgeDrawer({
     super.key,
-    this.selectedTooltip,
+    required this.selectedTooltip,
     this.onNewNote,
     this.onBrowseFiles,
     this.onHome,
     this.onNotePage,
+    this.onReminderPage,
     this.onSettings,
   });
 
@@ -78,6 +74,7 @@ class ForgeDrawer extends StatelessWidget {
                       ),
                     ),
               ),
+
               _SidebarIcon(
                 icon: Icons.notes,
                 tooltip: "Notes",
@@ -93,11 +90,11 @@ class ForgeDrawer extends StatelessWidget {
                     ),
               ),
               _SidebarIcon(
-                icon: Icons.checklist,
+                icon: Icons.calendar_month,
                 tooltip: "Reminders",
                 isSelected: selectedTooltip == "Reminders",
                 onPressed:
-                    onNotePage ??
+                    onReminderPage ??
                     () => Navigator.of(context).push(
                       PageRouteBuilder(
                         pageBuilder: (_, __, ___) => ForgeReminderPage(),

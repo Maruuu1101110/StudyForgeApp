@@ -19,6 +19,8 @@ dependencies:
   markdown_widget: ^2.3.2+8
   markdown_editor_plus: ^0.2.15 
   font_awesome_flutter: ^10.8.0
+  table_calendar: ^3.2.0
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:

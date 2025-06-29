@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 // custom widgets
 import '../components/sideBar.dart';
-import '../components/noteCard.dart';
+import '../components/cards/noteCard.dart';
 import '../components/speedDial.dart';
 import 'package:study_forge/components/animatedPopIcon.dart';
 

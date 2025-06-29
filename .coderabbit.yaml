@@ -1,0 +1,6 @@
+review:
+  summarize: true
+  include_tests: true
+  language: en
+  tone: friendly
+  coverage: high
