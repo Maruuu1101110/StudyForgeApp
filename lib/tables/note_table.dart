@@ -95,7 +95,11 @@ class NoteManager {
     final db = await database;
     await db.update(
       'notes',
-      {'title': newTitle, 'content': newContent, 'isMarkDown': isMarkDown},
+      {
+        'title': newTitle,
+        'content': newContent,
+        'isMarkDown': isMarkDown ? 1 : 0,
+      },
       where: 'id = ?',
       whereArgs: [id],
     );
