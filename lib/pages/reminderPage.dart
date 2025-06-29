@@ -84,7 +84,7 @@ class _ReminderPageState extends State<ForgeReminderPage> with RouteAware {
                 tooltip: 'Cancel selection',
                 onPressed: () {
                   setState(() {
-                    selectedCards.clear(); // 🔁 This should rebuild the screen
+                    selectedCards.clear();
                   });
                 },
               ),
@@ -135,8 +135,8 @@ class _ReminderPageState extends State<ForgeReminderPage> with RouteAware {
                         await reminderManager.deleteReminder(id);
                       }
 
-                      await loadReminders(); // now it refreshes after deletion
-                      setState(() => selectedCards.clear()); // clear selection
+                      await loadReminders();
+                      setState(() => selectedCards.clear());
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Reminder deleted")),
@@ -152,7 +152,7 @@ class _ReminderPageState extends State<ForgeReminderPage> with RouteAware {
       drawer: ForgeDrawer(selectedTooltip: "Reminders"),
       body: Column(
         children: [
-          // 📅 Static Calendar (stays in place)
+          // Static Calendar (stays in place)
           Padding(
             padding: const EdgeInsets.all(10),
             child: TableCalendar(
