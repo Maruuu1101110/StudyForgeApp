@@ -7,7 +7,6 @@ import 'package:study_forge/components/markdownShortcut.dart';
 import 'package:study_forge/components/wordLimiter.dart';
 
 // database
-
 import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/components/smart_md_editor.dart';
 
