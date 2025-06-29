@@ -16,7 +16,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    // ✅ Desktop-specific: Use FFI for SQLite
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
