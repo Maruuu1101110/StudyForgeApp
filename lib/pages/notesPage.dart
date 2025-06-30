@@ -34,6 +34,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
   @override
   void initState() {
     super.initState();
+    noteManager.ensureNoteTableExists();
     loadNotes();
   }
 
@@ -190,8 +191,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
                   tooltip: 'Cancel selection',
                   onPressed: () {
                     setState(() {
-                      selectedNotes
-                          .clear(); // 🔁 This should rebuild the screen
+                      selectedNotes.clear();
                     });
                   },
                 ),
@@ -247,10 +247,8 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
                           await noteManager.deleteNote(id);
                         }
 
-                        await loadNotes(); // ✅ now it refreshes after deletion
-                        setState(
-                          () => selectedNotes.clear(),
-                        ); // 🧼 clear selection
+                        await loadNotes();
+                        setState(() => selectedNotes.clear());
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Notes deleted")),
