@@ -30,15 +30,19 @@ class ReminderCard extends StatelessWidget {
     final now = DateTime.now();
     final difference = dueDate.difference(now);
 
+    if (reminder.isCompleted && dueDate.isBefore(now)) {
+      return 'Completed';
+    }
     if (difference.isNegative) {
       return 'Overdue by ${difference.abs().inHours}h';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} mins left';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} hrs left';
-    } else {
-      return '${difference.inDays} days left';
     }
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} mins left';
+    }
+    if (difference.inHours < 24) {
+      return '${difference.inHours} hrs left';
+    }
+    return '${difference.inDays} days left';
   }
 
   @override
@@ -91,10 +95,14 @@ class ReminderCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       reminder.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: reminder.isCompleted
+                            ? Colors.green
+                            : reminder.dueDate.isBefore(DateTime.now())
+                            ? Colors.red
+                            : Colors.white70,
                       ),
                     ),
                   ),
