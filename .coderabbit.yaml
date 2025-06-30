@@ -1,8 +1,7 @@
-+reviews:
-+  language: en          
-+  high_level_summary: true
-+  profile: chill
-+
-+finishing_touches:
-+  unit_tests:
-+    enabled: true
+reviews:
+  language: en          
+  high_level_summary: true
+  profile: chill
+finishing_touches:
+  unit_tests:
+  enabled: true
