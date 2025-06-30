@@ -5,6 +5,22 @@ import 'package:study_forge/models/reminder_model.dart';
 
 class ReminderManager {
   static Database? _database;
+  ReminderManager._internal();
+  static final ReminderManager _instance = ReminderManager._internal();
+  factory ReminderManager() => _instance;
+
+  static const String createReminderTableSQL = '''
+  CREATE TABLE IF NOT EXISTS reminders(
+    id TEXT PRIMARY KEY,
+    title TEXT,
+    tags TEXT,
+    description TEXT,
+    createdAt INTEGER,
+    dueDate INTEGER,
+    isPinned INTEGER,
+    isCompleted INTEGER
+  )
+''';
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -13,42 +29,20 @@ class ReminderManager {
 
   Future<Database> _initDatabase() async {
     final directory = await getApplicationDocumentsDirectory();
-    final path = join(directory.path, 'notes.db');
+    final path = join(directory.path, 'studyforge.db');
 
     return await openDatabase(
       path,
       version: 1,
       onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE reminders(
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            tags TEXT,
-            description TEXT,
-            createdAt INTEGER,
-            dueDate INTEGER,
-            isPinned INTEGER,
-            isCompleted INTEGER
-          )
-        ''');
+        await db.execute(createReminderTableSQL);
       },
     );
   }
 
   Future<void> ensureReminderTableExists() async {
     final db = await database;
-    await db.execute('''
-    CREATE TABLE IF NOT EXISTS reminders(
-      id TEXT PRIMARY KEY,
-      title TEXT,
-      tags TEXT,
-      description TEXT,
-      createdAt INTEGER,
-      dueDate INTEGER,
-      isPinned INTEGER,
-      isCompleted INTEGER
-    )
-  ''');
+    await db.execute(createReminderTableSQL);
   }
 
   Future<void> addReminder(Reminder reminder) async {

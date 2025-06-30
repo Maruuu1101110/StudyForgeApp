@@ -5,6 +5,20 @@ import 'package:study_forge/models/note_model.dart';
 
 class NoteManager {
   static Database? _database;
+  NoteManager._internal();
+  static final NoteManager _instance = NoteManager._internal();
+  factory NoteManager() => _instance;
+
+  static const String createNoteTableSQL = '''
+    CREATE TABLE IF NOT EXISTS notes(
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      content TEXT,
+      created_at INTEGER,
+      bookmarked INTEGER DEFAULT 0,
+      isMarkDown INTEGER DEFAULT 0
+    )
+  ''';
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -13,24 +27,26 @@ class NoteManager {
 
   Future<Database> _initDatabase() async {
     final directory = await getApplicationDocumentsDirectory();
-    final path = join(directory.path, 'notes.db');
+    final path = join(directory.path, 'studyforge.db');
 
     return await openDatabase(
       path,
       version: 1,
       onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE notes(
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            content TEXT,
-            created_at INTEGER,
-            bookmarked INTEGER,
-            isMarkDown INTEGER
-          )
-        ''');
+        await db.execute(createNoteTableSQL);
       },
     );
+  }
+
+  Future<void> ensureNoteTableExists() async {
+    final db = await database;
+    final result = await db.rawQuery('PRAGMA table_info(notes)');
+    if (result.isEmpty) {
+      await db.execute(createNoteTableSQL);
+      print("Note table created.");
+    } else {
+      print("Note table already exists.");
+    }
   }
 
   Future<void> addNote(
@@ -125,6 +141,7 @@ class NoteManager {
     await db.execute("DELETE FROM notes");
   }
 
+  // This is during development, so we can run migrations manually for debugging purposes.
   Future<void> migrateDatabaseAddCreatedAt() async {
     final db = await database;
     try {
@@ -132,9 +149,9 @@ class NoteManager {
       await db.execute(
         "UPDATE notes SET created_at = ${DateTime.now().millisecondsSinceEpoch}",
       );
-      print("✅ Migration: 'created_at' column added and backfilled.");
+      print("Migration: 'created_at' column added and backfilled.");
     } catch (e) {
-      print("⚠️ Migration skipped or failed: $e");
+      print("Migration skipped or failed: $e");
     }
   }
 
