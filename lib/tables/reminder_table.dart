@@ -23,6 +23,7 @@ class ReminderManager {
           CREATE TABLE reminders(
             id TEXT PRIMARY KEY,
             title TEXT,
+            tags TEXT,
             description TEXT,
             createdAt INTEGER,
             dueDate INTEGER,
@@ -40,6 +41,7 @@ class ReminderManager {
     CREATE TABLE IF NOT EXISTS reminders(
       id TEXT PRIMARY KEY,
       title TEXT,
+      tags TEXT,
       description TEXT,
       createdAt INTEGER,
       dueDate INTEGER,

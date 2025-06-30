@@ -24,7 +24,7 @@ class Reminder {
     return Reminder(
       id: map['id'] as String,
       title: map['title'] as String,
-
+      tags: map['tags'] as String?,
       description: map['description'] as String,
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
       dueDate: DateTime.fromMillisecondsSinceEpoch(map['dueDate'] as int),
@@ -41,6 +41,7 @@ class Reminder {
     return Reminder(
       id: 'empty',
       title: 'New Reminder',
+      tags: null,
       description: '',
       createdAt: DateTime.now(),
       dueDate: DateTime.now().add(Duration(days: 1)),
@@ -52,6 +53,7 @@ class Reminder {
     return {
       'id': id,
       'title': title,
+      'tags': tags,
       'description': description,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'dueDate': dueDate.millisecondsSinceEpoch,
