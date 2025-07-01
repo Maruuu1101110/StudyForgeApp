@@ -6,7 +6,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 // custom widgets
 
-// algorithms
+// components
 import 'utils/navigationObservers.dart';
 
 // pages
@@ -16,7 +16,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    // ✅ Desktop-specific: Use FFI for SQLite
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-// algorithms
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+// database
+import 'package:study_forge/models/note_model.dart';
+import 'package:study_forge/tables/note_table.dart';
+import 'package:study_forge/tables/reminder_table.dart';
 
 // custom widgets
 import 'package:study_forge/components/sideBar.dart';
@@ -15,7 +17,17 @@ class ForgeHomePage extends StatefulWidget {
 }
 
 class _ForgeHomeState extends State<ForgeHomePage> {
+  final noteManager = NoteManager();
+  final reminderManager = ReminderManager();
   List<Note> allNotes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    noteManager.ensureNoteTableExists();
+    reminderManager.ensureReminderTableExists();
+  }
+
   void loadAllNotes() async {
     final notes = await NoteManager().getAllNotes();
     setState(() => allNotes = notes);

@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 // custom widgets
 import '../components/sideBar.dart';
-import '../components/noteCard.dart';
+import '../components/cards/noteCard.dart';
 import '../components/speedDial.dart';
 import 'package:study_forge/components/animatedPopIcon.dart';
 
-// algorithms
-import '/algorithms/noteSearchAlgo.dart';
+// database
+import 'package:study_forge/models/note_model.dart';
+import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/utils/navigationObservers.dart';
 
 // pages
@@ -33,6 +34,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
   @override
   void initState() {
     super.initState();
+    noteManager.ensureNoteTableExists();
     loadNotes();
   }
 
@@ -163,7 +165,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
         return shouldExit ?? false;
       },
       child: Scaffold(
-        floatingActionButton: FloatingSpeedDial(),
+        floatingActionButton: FloatingSpeedDial(isNotes: true),
         appBar: AppBar(
           scrolledUnderElevation: 0,
           backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
@@ -189,8 +191,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
                   tooltip: 'Cancel selection',
                   onPressed: () {
                     setState(() {
-                      selectedNotes
-                          .clear(); // 🔁 This should rebuild the screen
+                      selectedNotes.clear();
                     });
                   },
                 ),
@@ -246,10 +247,8 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
                           await noteManager.deleteNote(id);
                         }
 
-                        await loadNotes(); // ✅ now it refreshes after deletion
-                        setState(
-                          () => selectedNotes.clear(),
-                        ); // 🧼 clear selection
+                        await loadNotes();
+                        setState(() => selectedNotes.clear());
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Notes deleted")),

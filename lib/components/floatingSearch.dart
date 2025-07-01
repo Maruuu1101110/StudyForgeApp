@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/models/note_model.dart';
 
 class FloatingSearchOverlay extends StatefulWidget {
   final List<Note> allNotes;

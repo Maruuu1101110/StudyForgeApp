@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:study_forge/algorithms/noteSearchAlgo.dart';
+import 'package:study_forge/models/note_model.dart';
+import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/components/animatedPopIcon.dart';
 import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
