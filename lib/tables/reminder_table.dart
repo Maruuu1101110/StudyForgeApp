@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'package:study_forge/models/reminder_model.dart';
+import 'package:study_forge/utils/notification_service.dart';
 
 class ReminderManager {
   static Database? _database;
@@ -18,7 +19,9 @@ class ReminderManager {
     createdAt INTEGER,
     dueDate INTEGER,
     isPinned INTEGER,
-    isCompleted INTEGER
+    isCompleted INTEGER,
+    isNotifEnabled INTEGER DEFAULT 1,
+    notificationId INTEGER DEFAULT NULL
   )
 ''';
 
@@ -38,6 +41,20 @@ class ReminderManager {
         await db.execute(createReminderTableSQL);
       },
     );
+  }
+
+  Future<void> ensureNotificationExists() async {
+    final db = await database;
+    try {
+      await db.execute(
+        'ALTER TABLE reminders ADD COLUMN isNotifEnabled INTEGER DEFAULT 1',
+      );
+    } catch (e) {}
+    try {
+      await db.execute(
+        'ALTER TABLE reminders ADD COLUMN notificationId INTEGER DEFAULT NULL',
+      );
+    } catch (e) {} // catches are for ignoring existing columns
   }
 
   Future<void> ensureReminderTableExists() async {
@@ -92,11 +109,21 @@ class ReminderManager {
 
   Future<void> deleteReminder(String id) async {
     final db = await database;
+
+    final reminder = await getReminderById(id);
+    if (reminder != null) {
+      await NotificationService.cancelNotification(reminder.notificationId);
+    }
+
     await db.delete('reminders', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> deleteAllReminders() async {
     final db = await database;
+
+    // cancel notifications before deleting reminders
+    await NotificationService.cancelAllNotifications();
+
     await db.delete('reminders');
   }
 
@@ -105,6 +132,24 @@ class ReminderManager {
     await db.update(
       'reminders',
       {'isPinned': isPinned ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> markAsCompleted(String id, bool isCompleted) async {
+    final db = await database;
+
+    if (isCompleted) {
+      final reminder = await getReminderById(id);
+      if (reminder != null) {
+        await NotificationService.cancelNotification(reminder.notificationId);
+      }
+    }
+
+    await db.update(
+      'reminders',
+      {'isCompleted': isCompleted ? 1 : 0},
       where: 'id = ?',
       whereArgs: [id],
     );

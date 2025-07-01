@@ -173,7 +173,12 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
       ),
 
       body: Padding(
-        padding: EdgeInsets.all(8),
+        padding: EdgeInsets.only(
+          top: 10,
+          left: 10,
+          right: 10,
+          bottom: 20,
+        ), // paddingsss yeyyy
         child: Column(
           children: [
             Theme(

@@ -3,17 +3,26 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 // custom widgets
 
 // components
 import 'utils/navigationObservers.dart';
+import 'package:study_forge/utils/notification_service.dart';
 
 // pages
 import 'package:study_forge/pages/homePage.dart';
 
+final GlobalKey<NavigatorState> navigatorKey =
+    GlobalKey<NavigatorState>(); // for notification OnTap navigation
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
+
+  final notificationService = NotificationService();
+  await notificationService.initNotif();
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
@@ -35,6 +44,7 @@ class StudyForge extends StatelessWidget {
   Widget build(BuildContext context) {
     Color appBarColor = const Color.fromARGB(255, 15, 15, 15);
     return MaterialApp(
+      navigatorKey: navigatorKey,
       navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',

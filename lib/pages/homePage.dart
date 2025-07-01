@@ -7,7 +7,9 @@ import 'package:study_forge/tables/reminder_table.dart';
 // custom widgets
 import 'package:study_forge/components/sideBar.dart';
 
-// pages
+// utils
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:study_forge/utils/notification_service.dart';
 
 class ForgeHomePage extends StatefulWidget {
   const ForgeHomePage({super.key});
@@ -24,8 +26,19 @@ class _ForgeHomeState extends State<ForgeHomePage> {
   @override
   void initState() {
     super.initState();
-    noteManager.ensureNoteTableExists();
-    reminderManager.ensureReminderTableExists();
+    _checkFirstRun();
+  }
+
+  void _checkFirstRun() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isFirstRun = prefs.getBool('isFirstRun') ?? true;
+
+    if (isFirstRun) {
+      await noteManager.ensureNoteTableExists();
+      await reminderManager.ensureReminderTableExists();
+
+      await prefs.setBool('isFirstRun', false);
+    }
   }
 
   void loadAllNotes() async {
@@ -88,7 +101,19 @@ class _ForgeHomeState extends State<ForgeHomePage> {
           ),
         ),
         drawer: ForgeDrawer(selectedTooltip: "Home"),
-        body: null,
+        body: ElevatedButton(
+          onPressed: () {
+            final scheduledTime = DateTime.now().add(Duration(seconds: 10));
+            NotificationService.scheduleNotification(
+              id: 1,
+              title: "Scheduled Notif",
+              body: "This was scheduled 10 seconds ago!",
+              scheduledTime: scheduledTime,
+              payload: "hello_from_schedule",
+            );
+          },
+          child: Text("Debug for Notification Scheduler."),
+        ),
       ),
     );
   }
