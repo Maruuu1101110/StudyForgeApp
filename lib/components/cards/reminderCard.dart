@@ -107,6 +107,25 @@ class ReminderCard extends StatelessWidget {
                     ),
                   ),
 
+                  // Completion checkbox
+                  GestureDetector(
+                    onTap: () async {
+                      await ReminderManager().markAsCompleted(
+                        reminder.id,
+                        !reminder.isCompleted,
+                      );
+                      onRefresh?.call();
+                    },
+                    child: Icon(
+                      reminder.isCompleted
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
+                      color: reminder.isCompleted ? Colors.green : Colors.grey,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
                   // Pin icon if reminder is pinned
                   PinnedIcon(
                     initialStatus: reminder.isPinned,

@@ -7,6 +7,8 @@ class Reminder {
   final DateTime dueDate;
   final bool isPinned;
   final bool isCompleted;
+  final int notificationId;
+  final bool isNotifEnabled;
 
   Reminder({
     required this.id,
@@ -17,9 +19,10 @@ class Reminder {
     required this.dueDate,
     this.isPinned = false,
     this.isCompleted = false,
+    this.notificationId = 0,
+    this.isNotifEnabled = true,
   });
 
-  // Factory constructor to create a Reminder from a map
   factory Reminder.fromMap(Map<String, dynamic> map) {
     return Reminder(
       id: map['id'] as String,
@@ -34,21 +37,13 @@ class Reminder {
       isCompleted: (map['isCompleted'] is int)
           ? (map['isCompleted'] == 1)
           : (map['isCompleted'] as bool? ?? false),
+      notificationId: map['notificationId'] as int? ?? 0,
+      isNotifEnabled: (map['isNotifEnabled'] is int)
+          ? (map['isNotifEnabled'] == 1)
+          : (map['isNotifEnabled'] as bool? ?? true),
     );
   }
 
-  factory Reminder.empty() {
-    return Reminder(
-      id: 'empty',
-      title: 'New Reminder',
-      tags: null,
-      description: '',
-      createdAt: DateTime.now(),
-      dueDate: DateTime.now().add(Duration(days: 1)),
-    );
-  }
-
-  // Method to convert a Reminder to a map
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -59,6 +54,8 @@ class Reminder {
       'dueDate': dueDate.millisecondsSinceEpoch,
       'isPinned': isPinned ? 1 : 0,
       'isCompleted': isCompleted ? 1 : 0,
+      'notificationId': notificationId,
+      'isNotifEnabled': isNotifEnabled ? 1 : 0,
     };
   }
 
@@ -71,6 +68,8 @@ class Reminder {
     DateTime? dueDate,
     bool? isPinned,
     bool? isCompleted,
+    int? notificationId,
+    bool? isNotifEnabled,
   }) {
     return Reminder(
       id: id ?? this.id,
@@ -81,6 +80,8 @@ class Reminder {
       dueDate: dueDate ?? this.dueDate,
       isPinned: isPinned ?? this.isPinned,
       isCompleted: isCompleted ?? this.isCompleted,
+      notificationId: notificationId ?? this.notificationId,
+      isNotifEnabled: isNotifEnabled ?? this.isNotifEnabled,
     );
   }
 }
