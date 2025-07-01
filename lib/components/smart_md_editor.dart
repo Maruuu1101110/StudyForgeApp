@@ -90,14 +90,19 @@ class _SmartMarkdownEditorState extends State<SmartMarkdownEditor> {
     return Focus(
       focusNode: _focusNode,
       onKeyEvent: _handleKey,
-      child: MarkdownField(
-        controller: widget.controller,
-        maxLines: null,
-        expands: true,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: "Type markdown...",
-          border: InputBorder.none,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: 15,
+        ), // added padding to let the bottom part breath...
+        child: MarkdownField(
+          controller: widget.controller,
+          maxLines: null,
+          expands: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Type markdown...",
+            border: InputBorder.none,
+          ),
         ),
       ),
     );
