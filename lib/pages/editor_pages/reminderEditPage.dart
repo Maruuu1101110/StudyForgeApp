@@ -192,6 +192,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
               ? _descriptionController.text
               : "⚠️ You have a reminder due in $_selectedLeadTimeKey.",
           scheduledTime: scheduledTime,
+          payload: id,
         );
       }
     } catch (e) {
