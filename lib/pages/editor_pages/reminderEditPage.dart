@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:uuid/uuid.dart';
 import 'package:study_forge/tables/reminder_table.dart';
 import 'package:study_forge/models/reminder_model.dart';
@@ -135,7 +136,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
     final createdAt = widget.existingReminder?.createdAt ?? DateTime.now();
     // fix here: adjusted to fit into the 32-bit error
     int getNotificationIdFromReminder =
-        DateTime.timestamp().millisecondsSinceEpoch % 1000000000;
+        DateTime.now().millisecondsSinceEpoch % 2147483647;
 
     final newReminder = Reminder(
       id: id,
