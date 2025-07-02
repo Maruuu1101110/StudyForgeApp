@@ -51,7 +51,7 @@ class _TitleFieldState extends State<TitleField> {
       style: const TextStyle(
         color: Colors.white,
         fontSize: 35,
-      ), // 🔥 makes the input text amber
+      ), // makes the input text amber
       decoration: InputDecoration(
         label: Text("Title"),
         labelStyle: TextStyle(fontSize: 35),

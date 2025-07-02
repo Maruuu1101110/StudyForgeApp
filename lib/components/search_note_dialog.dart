@@ -25,9 +25,7 @@ Future<void> showNoteSearchDialog(
               borderSide: BorderSide(color: Colors.grey),
             ),
           ),
-          onChanged: (query) {
-            // Optionally live search or debounce
-          },
+          onChanged: (query) {},
         ),
         actions: [
           TextButton(

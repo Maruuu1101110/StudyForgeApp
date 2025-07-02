@@ -40,7 +40,7 @@ class NotificationService {
     }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@drawable/notification_icon');
+        AndroidInitializationSettings('@drawable/notification_logo');
 
     final InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
@@ -65,6 +65,7 @@ class NotificationService {
         channelDescription: 'Reminder notifications',
         importance: Importance.max,
         priority: Priority.high,
+        largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       );
 
       const notificationDetails = NotificationDetails(android: androidDetails);

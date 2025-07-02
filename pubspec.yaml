@@ -6,6 +6,12 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.8.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/sf_logo.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
   
 dependencies:
   flutter:
@@ -25,6 +31,7 @@ dependencies:
   timezone: ^0.10.1
   permission_handler: ^12.0.0+1
   shared_preferences: ^2.5.3
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -49,3 +56,4 @@ flutter:
 
   assets:
     - assets/system_icons/notification_icon.png
+    - assets/sf_logo.png
