@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:study_forge/tables/reminder_table.dart';
 import 'package:study_forge/models/reminder_model.dart';
+import 'package:study_forge/utils/notification_service.dart';
 
 class ReminderEditPage extends StatefulWidget {
   final ReminderManager reminderManager;
@@ -13,6 +14,8 @@ class ReminderEditPage extends StatefulWidget {
   final DateTime? dueDate;
   final bool? isPinned;
   final bool? isCompleted;
+  final String? notificationId;
+  final String? notificationTime;
 
   const ReminderEditPage({
     Key? key,
@@ -25,6 +28,8 @@ class ReminderEditPage extends StatefulWidget {
     this.dueDate,
     this.isPinned,
     this.isCompleted,
+    this.notificationId,
+    this.notificationTime,
   }) : super(key: key);
 
   @override
@@ -42,6 +47,12 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
   late bool _isPinned;
   late bool _isCompleted;
 
+  late bool _willNotify;
+  String _selectedLeadTimeKey = '5m';
+  Duration _customLeadTimeDuration = Duration.zero;
+  late String? _selectedUnit = 'minutes';
+  late bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +67,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
     _dueTime = TimeOfDay.fromDateTime(_dueDate);
     _isPinned = reminder?.isPinned ?? false;
     _isCompleted = reminder?.isCompleted ?? false;
+    _willNotify = reminder?.isNotifEnabled ?? true;
 
     _titleController.addListener(_updateSaveButtonState);
     _descriptionController.addListener(_updateSaveButtonState);
@@ -65,7 +77,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _dueDate,
-      firstDate: DateTime.now(),
+      firstDate: _dueDate.isBefore(DateTime.now()) ? _dueDate : DateTime.now(),
       lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
@@ -87,7 +99,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
 
     if (picked != null && picked != _dueDate) {
       setState(() => _dueDate = picked);
-      _updateSaveButtonState(); // Update save button state when date changes
+      _updateSaveButtonState();
     }
   }
 
@@ -118,8 +130,12 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
   }
 
   void _saveReminder() async {
+    setState(() => _isSaving = true);
     final id = widget.existingReminder?.id ?? const Uuid().v4();
     final createdAt = widget.existingReminder?.createdAt ?? DateTime.now();
+    // fix here: adjusted to fit into the 32-bit error
+    int getNotificationIdFromReminder =
+        DateTime.now().millisecondsSinceEpoch % 2147483647;
 
     final newReminder = Reminder(
       id: id,
@@ -133,19 +149,85 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
         _dueTime.hour,
         _dueTime.minute,
       ),
-      // Combine date and time into a single DateTime object
       createdAt: createdAt,
       isPinned: _isPinned,
       isCompleted: _isCompleted,
+      isNotifEnabled: _willNotify,
+      notificationId: getNotificationIdFromReminder,
     );
-
-    if (widget.existingReminder != null) {
-      await widget.reminderManager.updateReminder(newReminder);
-    } else {
-      await widget.reminderManager.addReminder(newReminder);
+    try {
+      if (widget.existingReminder != null) {
+        // will cancel old notifs when updating/updated
+        await NotificationService.cancelNotification(
+          widget.existingReminder!.notificationId,
+        );
+        await widget.reminderManager.updateReminder(newReminder);
+      } else {
+        await widget.reminderManager.addReminder(newReminder);
+      }
+    } catch (e) {
+      debugPrint("Error saving reminder: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error Saving: $e")));
+      setState(() => _isSaving = false);
+      return;
     }
 
-    Navigator.of(context).pop();
+    final scheduledTime = DateTime(
+      _dueDate.year,
+      _dueDate.month,
+      _dueDate.day,
+      _dueTime.hour,
+      _dueTime.minute,
+    ).subtract(getLeadTimeDuration(_selectedLeadTimeKey));
+    try {
+      if (scheduledTime.isAfter(DateTime.now()) && _willNotify) {
+        await NotificationService.scheduleNotification(
+          id: getNotificationIdFromReminder, // use the new notification ID ALWAYS
+          title: _titleController.text.isNotEmpty
+              ? "⏰️Reminder: ${_titleController.text} | Due in $_selectedLeadTimeKey"
+              : "⏰️ Reminder",
+          body: _descriptionController.text.isNotEmpty
+              ? _descriptionController.text
+              : "⚠️ You have a reminder due in $_selectedLeadTimeKey.",
+          scheduledTime: scheduledTime,
+          payload: id,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error scheduling notification: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error Scheduling: $e")));
+      setState(() => _isSaving = false);
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _isSaving = false);
+      Navigator.of(context).pop();
+    }
+  }
+
+  Duration getLeadTimeDuration(String key) {
+    if (key == 'custom...') {
+      return _customLeadTimeDuration;
+    }
+    switch (key) {
+      case '5m':
+        return const Duration(minutes: 5);
+      case '10m':
+        return const Duration(minutes: 10);
+      case '15m':
+        return const Duration(minutes: 15);
+      case '30m':
+        return const Duration(minutes: 30);
+      case '1h':
+        return const Duration(hours: 1);
+      default:
+        return const Duration(minutes: 5);
+    }
   }
 
   bool _isSaveEnabled = false;
@@ -194,7 +276,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
                 ),
               ),
             ),
-            onPressed: _isSaveEnabled ? _saveReminder : null,
+            onPressed: _isSaveEnabled && !_isSaving ? _saveReminder : null,
           ),
         ],
       ),
@@ -221,7 +303,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
               children: [
                 const Text(
                   "Tags: ",
-                  style: TextStyle(fontSize: 20, color: Colors.amberAccent),
+                  style: TextStyle(fontSize: 20, color: Colors.amber),
                 ),
                 const SizedBox(width: 10),
                 DropdownButton<String>(
@@ -248,7 +330,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
                   ],
                   onChanged: (value) {
                     setState(() => _tagController.text = value ?? '');
-                    _updateSaveButtonState(); // Update save button state
+                    _updateSaveButtonState();
                   },
                   hint: Text(
                     _tagController.text.isNotEmpty
@@ -259,6 +341,246 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              inactiveTrackColor: const Color.fromARGB(75, 50, 50, 50),
+              activeColor: Colors.amber,
+              activeTrackColor: const Color.fromARGB(255, 77, 57, 0),
+              inactiveThumbColor: Colors.amber,
+              title: const Text(
+                'Enable Notifications',
+                style: TextStyle(color: Colors.amber),
+              ),
+              value: _willNotify,
+              onChanged: (value) => setState(() {
+                _willNotify = value;
+                _updateSaveButtonState();
+              }),
+            ),
+            const SizedBox(width: 10),
+            if (_willNotify)
+              Row(
+                children: [
+                  Text("Remind me before:", style: TextStyle(fontSize: 18)),
+                  SizedBox(width: 10),
+                  DropdownButton<String>(
+                    value: _selectedLeadTimeKey,
+                    dropdownColor: const Color.fromARGB(255, 30, 30, 30),
+                    iconEnabledColor: Colors.amber,
+                    underline: Container(),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: "Petrona",
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: '5m',
+                        child: Text(
+                          '5 Minutes',
+                          style: TextStyle(fontFamily: "Petrona"),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: '10m',
+                        child: Text(
+                          '10 Minutes',
+                          style: TextStyle(fontFamily: "Petrona"),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: '15m',
+                        child: Text(
+                          '15 Minutes',
+                          style: TextStyle(fontFamily: "Petrona"),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: '30m',
+                        child: Text(
+                          '30 Minutes',
+                          style: TextStyle(fontFamily: "Petrona"),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: '1h',
+                        child: Text(
+                          '1 Hour',
+                          style: TextStyle(fontFamily: "Petrona"),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'custom...',
+                        child: Text(
+                          'custom...',
+                          style: TextStyle(fontFamily: "Petrona"),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _selectedLeadTimeKey = value ?? '5m');
+                      if (_selectedLeadTimeKey == "custom...") {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            TextEditingController customLeadTimeController =
+                                TextEditingController();
+
+                            return AlertDialog(
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                30,
+                                30,
+                                30,
+                              ),
+                              title: const Text(
+                                "Custom Lead Time",
+                                style: TextStyle(color: Colors.amber),
+                              ),
+                              content: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: customLeadTimeController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: InputDecoration(
+                                        hintText: "Enter duration",
+                                        hintStyle: TextStyle(
+                                          color: Colors.white70,
+                                        ),
+                                        enabledBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Colors.amber,
+                                          ),
+                                        ),
+                                        focusedBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Colors.amber,
+                                            width: 2,
+                                          ),
+                                        ),
+                                      ),
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  DropdownButton<String>(
+                                    value: _selectedUnit ?? 'minutes',
+                                    dropdownColor: Color.fromARGB(
+                                      255,
+                                      30,
+                                      30,
+                                      30,
+                                    ),
+                                    iconEnabledColor: Colors.amber,
+                                    style: TextStyle(color: Colors.white),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: 'minutes',
+                                        child: Text(
+                                          'min',
+                                          style: TextStyle(
+                                            fontFamily: "Petrona",
+                                          ),
+                                        ),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'hours',
+                                        child: Text(
+                                          'hrs',
+                                          style: TextStyle(
+                                            fontFamily: "Petrona",
+                                          ),
+                                        ),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'days',
+                                        child: Text(
+                                          'day',
+                                          style: TextStyle(
+                                            fontFamily: "Petrona",
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedUnit = value!;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+
+                              actions: [
+                                TextButton(
+                                  child: const Text(
+                                    "Cancel",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                ),
+                                TextButton(
+                                  child: const Text(
+                                    "Save",
+                                    style: TextStyle(color: Colors.amber),
+                                  ),
+                                  onPressed: () {
+                                    final input = customLeadTimeController.text;
+                                    final parsed = int.tryParse(input);
+
+                                    try {
+                                      if (parsed != null) {
+                                        Duration leadTime;
+
+                                        switch (_selectedUnit) {
+                                          case 'minutes':
+                                            leadTime = Duration(
+                                              minutes: parsed,
+                                            );
+                                            break;
+                                          case 'hours':
+                                            leadTime = Duration(hours: parsed);
+                                            break;
+                                          case 'days':
+                                            leadTime = Duration(days: parsed);
+                                            break;
+                                          default:
+                                            leadTime = Duration(
+                                              minutes: parsed,
+                                            );
+                                        }
+
+                                        setState(() {
+                                          _customLeadTimeDuration = leadTime;
+                                          _selectedLeadTimeKey = "custom...";
+                                        });
+                                      }
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text("Invalid input: $e"),
+                                        ),
+                                      );
+                                    }
+
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
+                    },
+                    hint: const Text(
+                      "Remind me before...",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
             const SizedBox(height: 16),
             ListTile(
               tileColor: const Color.fromARGB(255, 25, 25, 25),
@@ -305,7 +627,6 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
               onChanged: (value) => setState(() {
                 _isPinned = value;
                 _updateSaveButtonState();
-                // Update save button state
               }),
             ),
             SwitchListTile(
@@ -320,7 +641,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
               value: _isCompleted,
               onChanged: (value) => setState(() {
                 _isCompleted = value;
-                _updateSaveButtonState(); // Update save button state
+                _updateSaveButtonState();
               }),
             ),
           ],

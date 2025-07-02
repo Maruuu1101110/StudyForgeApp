@@ -21,6 +21,10 @@ dependencies:
   font_awesome_flutter: ^10.8.0
   table_calendar: ^3.2.0
   intl: ^0.20.2
+  flutter_local_notifications: ^19.3.0
+  timezone: ^0.10.1
+  permission_handler: ^12.0.0+1
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
@@ -42,3 +46,6 @@ flutter:
     - family: Petrona
       fonts:
         - asset: assets/fonts/Petrona-Regular.ttf
+
+  assets:
+    - assets/system_icons/notification_icon.png
