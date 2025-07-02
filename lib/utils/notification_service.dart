@@ -79,6 +79,7 @@ class NotificationService {
     );
   }
 
+  /* this is still a WIP sooo might go back to this later...
   static Future<void> scheduleOnRepeatDays({
     required int id,
     required String title,
@@ -99,7 +100,7 @@ class NotificationService {
 
     const notificationDetails = NotificationDetails(android: androidDetails);
   }
-
+*/
   void onDidReceiveNotificationResponse(
     NotificationResponse notificationResponse,
   ) async {

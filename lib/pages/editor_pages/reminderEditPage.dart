@@ -51,6 +51,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
   String _selectedLeadTimeKey = '5m';
   Duration _customLeadTimeDuration = Duration.zero;
   late String? _selectedUnit = 'minutes';
+  late bool _isSaving = false;
 
   @override
   void initState() {
@@ -129,6 +130,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
   }
 
   void _saveReminder() async {
+    setState(() => _isSaving = true);
     final id = widget.existingReminder?.id ?? const Uuid().v4();
     final createdAt = widget.existingReminder?.createdAt ?? DateTime.now();
     // fix here: adjusted to fit into the 32-bit error
@@ -153,15 +155,23 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
       isNotifEnabled: _willNotify,
       notificationId: getNotificationIdFromReminder,
     );
-
-    if (widget.existingReminder != null) {
-      // will cancel old notifs when updating/updated
-      await NotificationService.cancelNotification(
-        widget.existingReminder!.notificationId,
-      );
-      await widget.reminderManager.updateReminder(newReminder);
-    } else {
-      await widget.reminderManager.addReminder(newReminder);
+    try {
+      if (widget.existingReminder != null) {
+        // will cancel old notifs when updating/updated
+        await NotificationService.cancelNotification(
+          widget.existingReminder!.notificationId,
+        );
+        await widget.reminderManager.updateReminder(newReminder);
+      } else {
+        await widget.reminderManager.addReminder(newReminder);
+      }
+    } catch (e) {
+      debugPrint("Error saving reminder: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error Saving: $e")));
+      setState(() => _isSaving = false);
+      return;
     }
 
     final scheduledTime = DateTime(
@@ -171,20 +181,32 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
       _dueTime.hour,
       _dueTime.minute,
     ).subtract(getLeadTimeDuration(_selectedLeadTimeKey));
-    if (scheduledTime.isAfter(DateTime.now()) && _willNotify) {
-      await NotificationService.scheduleNotification(
-        id: getNotificationIdFromReminder, // use the new notification ID ALWAYS
-        title: _titleController.text.isNotEmpty
-            ? "⏰️Reminder: ${_titleController.text} | Due in $_selectedLeadTimeKey"
-            : "⏰️ Reminder",
-        body: _descriptionController.text.isNotEmpty
-            ? _descriptionController.text
-            : "⚠️ You have a reminder due in $_selectedLeadTimeKey.",
-        scheduledTime: scheduledTime,
-      );
+    try {
+      if (scheduledTime.isAfter(DateTime.now()) && _willNotify) {
+        await NotificationService.scheduleNotification(
+          id: getNotificationIdFromReminder, // use the new notification ID ALWAYS
+          title: _titleController.text.isNotEmpty
+              ? "⏰️Reminder: ${_titleController.text} | Due in $_selectedLeadTimeKey"
+              : "⏰️ Reminder",
+          body: _descriptionController.text.isNotEmpty
+              ? _descriptionController.text
+              : "⚠️ You have a reminder due in $_selectedLeadTimeKey.",
+          scheduledTime: scheduledTime,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error scheduling notification: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error Scheduling: $e")));
+      setState(() => _isSaving = false);
+      return;
     }
 
-    Navigator.of(context).pop();
+    if (mounted) {
+      setState(() => _isSaving = false);
+      Navigator.of(context).pop();
+    }
   }
 
   Duration getLeadTimeDuration(String key) {
@@ -253,7 +275,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
                 ),
               ),
             ),
-            onPressed: _isSaveEnabled ? _saveReminder : null,
+            onPressed: _isSaveEnabled && !_isSaving ? _saveReminder : null,
           ),
         ],
       ),
@@ -505,27 +527,41 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
                                     final input = customLeadTimeController.text;
                                     final parsed = int.tryParse(input);
 
-                                    if (parsed != null) {
-                                      Duration leadTime;
+                                    try {
+                                      if (parsed != null) {
+                                        Duration leadTime;
 
-                                      switch (_selectedUnit) {
-                                        case 'minutes':
-                                          leadTime = Duration(minutes: parsed);
-                                          break;
-                                        case 'hours':
-                                          leadTime = Duration(hours: parsed);
-                                          break;
-                                        case 'days':
-                                          leadTime = Duration(days: parsed);
-                                          break;
-                                        default:
-                                          leadTime = Duration(minutes: parsed);
+                                        switch (_selectedUnit) {
+                                          case 'minutes':
+                                            leadTime = Duration(
+                                              minutes: parsed,
+                                            );
+                                            break;
+                                          case 'hours':
+                                            leadTime = Duration(hours: parsed);
+                                            break;
+                                          case 'days':
+                                            leadTime = Duration(days: parsed);
+                                            break;
+                                          default:
+                                            leadTime = Duration(
+                                              minutes: parsed,
+                                            );
+                                        }
+
+                                        setState(() {
+                                          _customLeadTimeDuration = leadTime;
+                                          _selectedLeadTimeKey = "custom...";
+                                        });
                                       }
-
-                                      setState(() {
-                                        _customLeadTimeDuration = leadTime;
-                                        _selectedLeadTimeKey = "custom...";
-                                      });
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text("Invalid input: $e"),
+                                        ),
+                                      );
                                     }
 
                                     Navigator.of(context).pop();
