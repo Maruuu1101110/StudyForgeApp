@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 // custom widgets
 import '../components/sideBar.dart';
@@ -136,8 +137,9 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -162,7 +164,9 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
             ],
           ),
         );
-        return shouldExit ?? false;
+        if (shouldExit == true) {
+          SystemNavigator.pop();
+        }
       },
       child: Scaffold(
         floatingActionButton: FloatingSpeedDial(isNotes: true),

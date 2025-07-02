@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 // database
 import 'package:study_forge/models/note_model.dart';
 import 'package:study_forge/tables/note_table.dart';
@@ -51,8 +52,9 @@ class _ForgeHomeState extends State<ForgeHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -77,7 +79,9 @@ class _ForgeHomeState extends State<ForgeHomePage> {
             ],
           ),
         );
-        return shouldExit ?? false;
+        if (shouldExit == true) {
+          SystemNavigator.pop();
+        }
       },
       child: Scaffold(
         appBar: AppBar(

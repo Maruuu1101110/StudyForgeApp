@@ -34,7 +34,7 @@ class _SmartMarkdownEditorState extends State<SmartMarkdownEditor> {
       final key = event.logicalKey;
 
       if (key == LogicalKeyboardKey.tab) {
-        _insertWrapped("    ", ""); // or use "\t" if you prefer a tab character
+        _insertWrapped("    ", "");
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.backquote) {

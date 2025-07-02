@@ -42,7 +42,7 @@ class _FloatingSearchOverlayState extends State<FloatingSearchOverlay> {
             Positioned.fill(
               child: GestureDetector(
                 onTap: widget.onClose,
-                child: Container(color: Colors.black.withOpacity(0.5)),
+                child: Container(color: Colors.black.withValues(alpha: 0.5)),
               ),
             ),
 

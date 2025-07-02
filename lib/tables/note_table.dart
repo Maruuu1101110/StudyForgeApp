@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'package:study_forge/models/note_model.dart';
+import 'package:flutter/foundation.dart';
 
 class NoteManager {
   static Database? _database;
@@ -149,9 +150,9 @@ class NoteManager {
       await db.execute(
         "UPDATE notes SET created_at = ${DateTime.now().millisecondsSinceEpoch}",
       );
-      print("Migration: 'created_at' column added and backfilled.");
+      debugPrint("Migration: 'created_at' column added and backfilled.");
     } catch (e) {
-      print("Migration skipped or failed: $e");
+      debugPrint("Migration skipped or failed: $e");
     }
   }
 

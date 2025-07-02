@@ -82,7 +82,9 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.dark().copyWith(
-            dialogBackgroundColor: const Color.fromARGB(255, 25, 25, 25),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: const Color.fromARGB(255, 25, 25, 25),
+            ),
             colorScheme: ColorScheme.dark(
               primary: Colors.amber,
               surface: const Color.fromARGB(255, 30, 30, 30),

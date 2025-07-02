@@ -30,7 +30,7 @@ class ForgeDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
-      width: 60, // Slim, just like Obsidian
+      width: 60,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
