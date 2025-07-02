@@ -46,3 +46,6 @@ flutter:
     - family: Petrona
       fonts:
         - asset: assets/fonts/Petrona-Regular.ttf
+
+  assets:
+    - assets/system_icons/notification_icon.png
