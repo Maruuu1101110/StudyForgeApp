@@ -83,7 +83,8 @@ class ForgeDrawer extends StatelessWidget {
                     onNotePage ??
                     () => Navigator.of(context).push(
                       PageRouteBuilder(
-                        pageBuilder: (_, __, ___) => ForgeNotesPage(),
+                        pageBuilder: (_, __, ___) =>
+                            ForgeNotesPage(source: NavigationSource.sidebar),
                         transitionsBuilder: (_, animation, __, child) =>
                             FadeTransition(opacity: animation, child: child),
                       ),
