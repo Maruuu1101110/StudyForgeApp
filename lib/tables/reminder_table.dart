@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'package:study_forge/models/reminder_model.dart';
+import 'package:study_forge/tables/user_profile_table.dart';
 import 'package:study_forge/utils/notification_service.dart';
 
 class ReminderManager {
@@ -140,6 +141,8 @@ class ReminderManager {
   Future<void> markAsCompleted(String id, bool isCompleted) async {
     final db = await database;
 
+    await UserProfileManager().incrementRemindersCompleted();
+
     if (isCompleted) {
       final reminder = await getReminderById(id);
       if (reminder != null) {
@@ -171,6 +174,16 @@ class ReminderManager {
       'reminders',
       where: 'isCompleted = ?',
       whereArgs: [1],
+    );
+    return List.generate(maps.length, (i) => Reminder.fromMap(maps[i]));
+  }
+
+  Future<List<Reminder>> getPendingReminders() async {
+    final db = await database;
+    final maps = await db.query(
+      'reminders',
+      where: 'isCompleted = ?',
+      whereArgs: [0],
     );
     return List.generate(maps.length, (i) => Reminder.fromMap(maps[i]));
   }

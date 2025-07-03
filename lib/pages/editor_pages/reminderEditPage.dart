@@ -641,10 +641,12 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
                 style: TextStyle(color: Colors.amber),
               ),
               value: _isCompleted,
-              onChanged: (value) => setState(() {
-                _isCompleted = value;
-                _updateSaveButtonState();
-              }),
+              onChanged: (value) {
+                _isCompleted = true;
+                setState(() {
+                  _updateSaveButtonState();
+                });
+              },
             ),
           ],
         ),

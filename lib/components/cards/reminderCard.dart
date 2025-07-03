@@ -109,13 +109,15 @@ class ReminderCard extends StatelessWidget {
 
                   // Completion checkbox
                   GestureDetector(
-                    onTap: () async {
-                      await ReminderManager().markAsCompleted(
-                        reminder.id,
-                        !reminder.isCompleted,
-                      );
-                      onRefresh?.call();
-                    },
+                    onTap: reminder.isCompleted
+                        ? null
+                        : () async {
+                            await ReminderManager().markAsCompleted(
+                              reminder.id,
+                              true,
+                            );
+                            onRefresh?.call();
+                          },
                     child: Icon(
                       reminder.isCompleted
                           ? Icons.check_box
