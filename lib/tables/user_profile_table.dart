@@ -46,6 +46,12 @@ class UserProfileManager {
     return _database!;
   }
 
+  // ensure user profile table exists
+  Future<void> ensureUserProfileTableExists() async {
+    final db = await database;
+    await db.execute(createUserProfileTableSQL);
+  }
+
   // get or create user profile since theres only one
   Future<UserProfile> getUserProfile() async {
     final db = await database;
