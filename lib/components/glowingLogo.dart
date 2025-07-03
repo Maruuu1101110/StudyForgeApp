@@ -35,32 +35,55 @@ class _GlowingLogoState extends State<GlowingLogo>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Color.fromRGBO(
-                  97,
-                  56,
-                  14,
-                  1,
-                ).withValues(alpha: _animation.value * 0.3),
-                blurRadius: 40 * _animation.value,
-                spreadRadius: 5 * _animation.value,
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // Positioned glow effect for the fire
+            Positioned(
+              top: 10, // Adjust this to position over the fire
+              left: 45, // Adjust this to center over the fire
+              child: Container(
+                width: 60, // Adjust width to match fire width
+                height: 60, // Adjust height to match fire height
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.all(
+                    Radius.elliptical(30, 40),
+                  ), // Fire-like shape
+                  boxShadow: [
+                    // Inner bright glow
+                    BoxShadow(
+                      color: Colors.orange.withValues(
+                        alpha: _animation.value * 0.2,
+                      ),
+                      blurRadius: 20 * _animation.value,
+                      spreadRadius: 2 * _animation.value,
+                    ),
+                    // Outer warm glow
+                    BoxShadow(
+                      color: Color.fromRGBO(
+                        97,
+                        56,
+                        14,
+                        1,
+                      ).withValues(alpha: _animation.value * 0.1),
+                      blurRadius: 35 * _animation.value,
+                      spreadRadius: 5 * _animation.value,
+                    ),
+                    // Subtle red glow
+                    BoxShadow(
+                      color: Colors.red.withValues(
+                        alpha: _animation.value * 0.2,
+                      ),
+                      blurRadius: 15 * _animation.value,
+                      spreadRadius: 1 * _animation.value,
+                    ),
+                  ],
+                ),
               ),
-              BoxShadow(
-                color: Colors.orange.withValues(alpha: _animation.value * 0.1),
-                blurRadius: 30 * _animation.value,
-                spreadRadius: 10 * _animation.value,
-              ),
-            ],
-          ),
-          child: Image.asset(
-            'assets/sf_logo_nobg.png',
-            width: 150,
-            height: 150,
-          ),
+            ),
+            // Placed here to appear on top of the glow
+            Image.asset('assets/sf_logo_nobg.png', width: 150, height: 150),
+          ],
         );
       },
     );
