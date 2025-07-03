@@ -3,6 +3,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'package:study_forge/models/note_model.dart';
 import 'package:flutter/foundation.dart';
+import 'package:study_forge/tables/user_profile_table.dart';
 
 class NoteManager {
   static Database? _database;
@@ -57,6 +58,8 @@ class NoteManager {
     bool isMarkDown,
   ) async {
     final db = await database;
+
+    await UserProfileManager().incrementNotesCreated();
 
     final trimmedTitle = title.trim();
     final trimmedContent = content.trim();

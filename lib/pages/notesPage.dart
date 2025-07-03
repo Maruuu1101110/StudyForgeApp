@@ -14,8 +14,11 @@ import 'package:study_forge/utils/navigationObservers.dart';
 
 // pages
 
+enum NavigationSource { sidebar, homePage, direct }
+
 class ForgeNotesPage extends StatefulWidget {
-  const ForgeNotesPage({super.key});
+  final NavigationSource source;
+  const ForgeNotesPage({super.key, required this.source});
 
   @override
   State<ForgeNotesPage> createState() => _ForgeNotesState();
@@ -33,7 +36,7 @@ class _ForgeNotesState extends State<ForgeNotesPage>
   bool get isSelectionMode => selectedNotes.isNotEmpty;
   bool isSearchActive = false;
 
-  // Animation controllers
+  // animation controllers for those smooth transitions
   late AnimationController _staggerController;
   late List<Animation<Offset>> _slideAnimations;
   late List<Animation<double>> _fadeAnimations;
@@ -43,7 +46,7 @@ class _ForgeNotesState extends State<ForgeNotesPage>
     super.initState();
     noteManager.ensureNoteTableExists();
 
-    // Initialize stagger animation controller
+    // setup stagger animation controller
     _staggerController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
@@ -72,10 +75,10 @@ class _ForgeNotesState extends State<ForgeNotesPage>
     final notes = await noteManager.getAllNotes();
     setState(() => searchResults = notes);
 
-    // Initialize animations after notes are loaded
+    // setup animations after notes load
     _initializeAnimations();
 
-    // Start the stagger animation
+    // start the stagger animation
     _staggerController.reset();
     _staggerController.forward();
   }
@@ -86,8 +89,8 @@ class _ForgeNotesState extends State<ForgeNotesPage>
     _fadeAnimations = [];
 
     for (int i = 0; i < itemCount; i++) {
-      final double start = i * 0.08; // Stagger delay
-      final double end = start + 0.4; // Animation duration per item
+      final double start = i * 0.08; // delay between cards
+      final double end = start + 0.4; // how long each card takes to animate
 
       final slideAnimation =
           Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
@@ -145,7 +148,7 @@ class _ForgeNotesState extends State<ForgeNotesPage>
       searchResults = results;
     });
 
-    // Re-initialize animations for search results
+    // reset animations for search results
     _initializeAnimations();
     _staggerController.reset();
     _staggerController.forward();
@@ -201,8 +204,11 @@ class _ForgeNotesState extends State<ForgeNotesPage>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: widget.source == NavigationSource.homePage,
       onPopInvokedWithResult: (didPop, result) async {
+        if (widget.source == NavigationSource.homePage) {
+          return;
+        }
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -417,7 +423,7 @@ class _ForgeNotesState extends State<ForgeNotesPage>
             itemBuilder: (context, index) {
               final note = searchResults[index];
 
-              // Ensure we have animations for this index
+              // animations for this card
               if (index >= _slideAnimations.length ||
                   index >= _fadeAnimations.length) {
                 return const SizedBox.shrink();
