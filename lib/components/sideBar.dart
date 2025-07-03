@@ -30,7 +30,7 @@ class ForgeDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
-      width: 60, // Slim, just like Obsidian
+      width: 60,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -83,7 +83,8 @@ class ForgeDrawer extends StatelessWidget {
                     onNotePage ??
                     () => Navigator.of(context).push(
                       PageRouteBuilder(
-                        pageBuilder: (_, __, ___) => ForgeNotesPage(),
+                        pageBuilder: (_, __, ___) =>
+                            ForgeNotesPage(source: NavigationSource.sidebar),
                         transitionsBuilder: (_, animation, __, child) =>
                             FadeTransition(opacity: animation, child: child),
                       ),

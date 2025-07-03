@@ -161,7 +161,7 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
               child: Padding(
                 padding: EdgeInsets.only(right: 15),
                 child: FaIcon(
-                  FontAwesomeIcons.save,
+                  FontAwesomeIcons.floppyDisk,
                   key: ValueKey<bool>(isSaveEnabled), // forces switch
                   color: isSaveEnabled ? Colors.amber : Colors.grey,
                   size: 23,

@@ -14,6 +14,12 @@ It is still in its early stages hence the lack of features but here are the feat
 
 - [x] Notifications.
 
+- [x] App theme.
+
+- [x] Gamification system (XP, levels, badges, streaks).
+
+- [x] User profile and progress tracking. 
+
 - [ ] PDF, PPT, DOCS, etc... file viewer. (comming real soon)
 
 - [ ] Folder and File Manager system.
@@ -36,6 +42,18 @@ It is still in its early stages hence the lack of features but here are the feat
 - Implemented reminder/scheduler feature
 - Added local notifications
 - (Known Issue) Some planned features are still pending
+
+## Patch 0.3.0: July 3, 2025 (alpha)
+- Added app theme
+- App branding
+
+## Patch 1.0.0: July 3, 2025 (beta)
+- Complete UI/UX redesign with modern amber theme
+- Glassmorphic design elements and smooth animations
+- Gamification system (XP, levels, badges, streaks)
+- User profile and progress tracking
+- Context-aware navigation improvements
+- Bug fixes and performance optimizations
 
 
 <br />
@@ -63,6 +81,9 @@ flutter doctor -v
 # Run the app
 flutter run --debug     # For development
 flutter run --release   # For production build
+
+# Build release APK
+flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols
 ```
 
 # ✨️ Contributions

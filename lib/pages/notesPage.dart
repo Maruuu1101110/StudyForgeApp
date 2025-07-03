@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 // custom widgets
 import '../components/sideBar.dart';
@@ -13,14 +14,18 @@ import 'package:study_forge/utils/navigationObservers.dart';
 
 // pages
 
+enum NavigationSource { sidebar, homePage, direct }
+
 class ForgeNotesPage extends StatefulWidget {
-  const ForgeNotesPage({super.key});
+  final NavigationSource source;
+  const ForgeNotesPage({super.key, required this.source});
 
   @override
   State<ForgeNotesPage> createState() => _ForgeNotesState();
 }
 
-class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
+class _ForgeNotesState extends State<ForgeNotesPage>
+    with RouteAware, TickerProviderStateMixin {
   final noteManager = NoteManager();
   List<Note> allNotes = [];
   List<Note> searchResults = [];
@@ -31,10 +36,22 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
   bool get isSelectionMode => selectedNotes.isNotEmpty;
   bool isSearchActive = false;
 
+  // animation controllers for those smooth transitions
+  late AnimationController _staggerController;
+  late List<Animation<Offset>> _slideAnimations;
+  late List<Animation<double>> _fadeAnimations;
+
   @override
   void initState() {
     super.initState();
     noteManager.ensureNoteTableExists();
+
+    // setup stagger animation controller
+    _staggerController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
     loadNotes();
   }
 
@@ -46,6 +63,7 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
 
   @override
   void dispose() {
+    _staggerController.dispose();
     routeObserver.unsubscribe(this);
     super.dispose();
   }
@@ -56,6 +74,50 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
   Future<void> loadNotes() async {
     final notes = await noteManager.getAllNotes();
     setState(() => searchResults = notes);
+
+    // setup animations after notes load
+    _initializeAnimations();
+
+    // start the stagger animation
+    _staggerController.reset();
+    _staggerController.forward();
+  }
+
+  void _initializeAnimations() {
+    final itemCount = searchResults.length;
+    _slideAnimations = [];
+    _fadeAnimations = [];
+
+    for (int i = 0; i < itemCount; i++) {
+      final double start = i * 0.08; // delay between cards
+      final double end = start + 0.4; // how long each card takes to animate
+
+      final slideAnimation =
+          Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+            CurvedAnimation(
+              parent: _staggerController,
+              curve: Interval(
+                start.clamp(0.0, 0.6),
+                end.clamp(0.0, 1.0),
+                curve: Curves.easeOutBack,
+              ),
+            ),
+          );
+
+      final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _staggerController,
+          curve: Interval(
+            start.clamp(0.0, 0.6),
+            end.clamp(0.0, 1.0),
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+
+      _slideAnimations.add(slideAnimation);
+      _fadeAnimations.add(fadeAnimation);
+    }
   }
 
   Future<void> resetSearch() async {
@@ -85,6 +147,11 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
       searchQuery = query;
       searchResults = results;
     });
+
+    // reset animations for search results
+    _initializeAnimations();
+    _staggerController.reset();
+    _staggerController.forward();
   }
 
   RichText highlightText(
@@ -136,8 +203,12 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: widget.source == NavigationSource.homePage,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (widget.source == NavigationSource.homePage) {
+          return;
+        }
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -162,47 +233,105 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
             ],
           ),
         );
-        return shouldExit ?? false;
+        if (shouldExit == true) {
+          SystemNavigator.pop();
+        }
       },
       child: Scaffold(
+        backgroundColor: const Color.fromRGBO(15, 15, 15, 1),
         floatingActionButton: FloatingSpeedDial(isNotes: true),
         appBar: AppBar(
           scrolledUnderElevation: 0,
-          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-          title: const Text("Notes"),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [
+                Colors.amber.shade200,
+                Colors.amber,
+                Colors.orange.shade300,
+              ],
+            ).createShader(bounds),
+            child: const Text(
+              "Notes",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w300,
+                color: Colors.white,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
           titleSpacing: 0,
           leading: Builder(
             builder: (context) {
-              return IconButton(
-                icon: const Icon(
-                  Icons.menu_rounded,
-                  color: Colors.white,
-                  size: 30,
+              return Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
                 ),
-                onPressed: () => Scaffold.of(context).openDrawer(),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.menu_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
               );
             },
           ),
           actions: [
             if (isSelectionMode) ...[
-              AnimatedPopIcon(
-                child: IconButton(
-                  icon: const Icon(Icons.cancel, color: Colors.amber, size: 30),
-                  tooltip: 'Cancel selection',
-                  onPressed: () {
-                    setState(() {
-                      selectedNotes.clear();
-                    });
-                  },
+              Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.amber.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: AnimatedPopIcon(
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.cancel,
+                      color: Colors.amber,
+                      size: 24,
+                    ),
+                    tooltip: 'Cancel selection',
+                    onPressed: () {
+                      setState(() {
+                        selectedNotes.clear();
+                      });
+                    },
+                  ),
                 ),
               ),
 
-              Padding(
-                padding: EdgeInsets.only(right: 10),
+              Container(
+                margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
                 child: AnimatedPopIcon(
                   child: IconButton(
-                    iconSize: 30,
-                    icon: const Icon(Icons.delete, color: Colors.redAccent),
+                    icon: const Icon(
+                      Icons.delete,
+                      color: Colors.redAccent,
+                      size: 24,
+                    ),
                     tooltip: "Delete Selected Notes?",
 
                     onPressed: () async {
@@ -251,7 +380,31 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
                         setState(() => selectedNotes.clear());
 
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Notes deleted")),
+                          SnackBar(
+                            backgroundColor: Colors.transparent,
+                            elevation: 0,
+                            behavior: SnackBarBehavior.floating,
+                            duration: const Duration(seconds: 2),
+                            content: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.red.shade600,
+                                    Colors.red.shade800,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: const Text(
+                                'Notes deleted successfully!',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
                         );
                       }
                     },
@@ -269,25 +422,37 @@ class _ForgeNotesState extends State<ForgeNotesPage> with RouteAware {
             itemCount: searchResults.length,
             itemBuilder: (context, index) {
               final note = searchResults[index];
-              // final isSelected = selectedNotes.contains(note.id);
 
-              return Padding(
-                key: ValueKey(note.id),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 0,
-                  vertical: 4.0,
-                ),
-                child: NoteCard(
-                  note: note,
-                  isSelected: selectedNotes.contains(note.id),
-                  isSelectionMode: selectedNotes.isNotEmpty,
-                  onSelectToggle: (id) {
-                    setState(() {
-                      selectedNotes.contains(id)
-                          ? selectedNotes.remove(id)
-                          : selectedNotes.add(id);
-                    });
-                  },
+              // animations for this card
+              if (index >= _slideAnimations.length ||
+                  index >= _fadeAnimations.length) {
+                return const SizedBox.shrink();
+              }
+
+              return SlideTransition(
+                position: _slideAnimations[index],
+                child: FadeTransition(
+                  opacity: _fadeAnimations[index],
+                  child: Padding(
+                    key: ValueKey(note.id),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 0,
+                      vertical: 4.0,
+                    ),
+                    child: NoteCard(
+                      note: note,
+                      isSelected: selectedNotes.contains(note.id),
+                      isSelectionMode: selectedNotes.isNotEmpty,
+                      onSelectToggle: (id) {
+                        setState(() {
+                          selectedNotes.contains(id)
+                              ? selectedNotes.remove(id)
+                              : selectedNotes.add(id);
+                        });
+                      },
+                      onRefresh: () => loadNotes(),
+                    ),
+                  ),
                 ),
               );
             },

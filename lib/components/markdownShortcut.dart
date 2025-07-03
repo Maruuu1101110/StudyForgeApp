@@ -260,8 +260,8 @@ class _MarkdownShortcutBarState extends State<MarkdownShortcutBar> {
           child: InkWell(
             borderRadius: BorderRadius.circular(7),
             onTap: enabled ? onPressed : null,
-            highlightColor: Colors.amber.withOpacity(enabled ? 0.2 : 0.0),
-            splashColor: Colors.amber.withOpacity(enabled ? 0.1 : 0.0),
+            highlightColor: Colors.amber.withValues(alpha: enabled ? 0.2 : 0.0),
+            splashColor: Colors.amber.withValues(alpha: enabled ? 0.1 : 0.0),
             child: Ink(
               decoration: BoxDecoration(
                 color: const Color.fromARGB(110, 0, 0, 0),
@@ -279,7 +279,7 @@ class _MarkdownShortcutBarState extends State<MarkdownShortcutBar> {
                     size: 16,
                     color: enabled
                         ? Colors.amber
-                        : Colors.amber.withOpacity(0.4),
+                        : Colors.amber.withValues(alpha: 0.4),
                   ),
                   if (label.isNotEmpty) ...[
                     const SizedBox(width: 3),
