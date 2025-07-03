@@ -14,6 +14,8 @@ It is still in its early stages hence the lack of features but here are the feat
 
 - [x] Notifications.
 
+- [x] App theme. (customization coming soon...) 
+
 - [ ] PDF, PPT, DOCS, etc... file viewer. (comming real soon)
 
 - [ ] Folder and File Manager system.
@@ -36,6 +38,10 @@ It is still in its early stages hence the lack of features but here are the feat
 - Implemented reminder/scheduler feature
 - Added local notifications
 - (Known Issue) Some planned features are still pending
+
+## Patch 0.3.0: July 3, 2025 (alpha)
+- Added app theme
+- App branding
 
 
 <br />

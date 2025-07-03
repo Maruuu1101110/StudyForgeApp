@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+
+// utils
 import 'package:study_forge/utils/navigationObservers.dart';
+
+// components
 import 'package:study_forge/components/sideBar.dart';
 import 'package:study_forge/components/speedDial.dart';
 import 'package:study_forge/components/animatedPopIcon.dart';
 import 'package:study_forge/components/cards/reminderCard.dart';
+
+// reminder core
 import 'package:study_forge/tables/reminder_table.dart';
 import 'package:study_forge/models/reminder_model.dart';
 
@@ -15,12 +21,18 @@ class ForgeReminderPage extends StatefulWidget {
   State<ForgeReminderPage> createState() => _ReminderPageState();
 }
 
-class _ReminderPageState extends State<ForgeReminderPage> with RouteAware {
+class _ReminderPageState extends State<ForgeReminderPage>
+    with RouteAware, TickerProviderStateMixin {
   final reminderManager = ReminderManager();
   List<Reminder> allReminders = [];
   bool isLoading = true;
   Set<String> selectedCards = {};
   bool get isSelectionMode => selectedCards.isNotEmpty;
+
+  // Animation controllers
+  late AnimationController _staggerController;
+  late List<Animation<Offset>> _slideAnimations;
+  late List<Animation<double>> _fadeAnimations;
 
   // Calendar state
   DateTime _selectedDay = DateTime.now();
@@ -35,6 +47,7 @@ class _ReminderPageState extends State<ForgeReminderPage> with RouteAware {
 
   @override
   void dispose() {
+    _staggerController.dispose();
     routeObserver.unsubscribe(this);
     super.dispose();
   }
@@ -46,56 +59,160 @@ class _ReminderPageState extends State<ForgeReminderPage> with RouteAware {
   void initState() {
     super.initState();
     reminderManager.ensureReminderTableExists();
+
+    // initialize stagger animation controller
+    _staggerController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
     loadReminders();
+  }
+
+  void _initializeAnimations() {
+    final itemCount = allReminders.length;
+    _slideAnimations = [];
+    _fadeAnimations = [];
+
+    for (int i = 0; i < itemCount; i++) {
+      final double start = i * 0.1; // Stagger delay
+      final double end = start + 0.4; // Animation duration per item
+
+      final slideAnimation =
+          Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+            CurvedAnimation(
+              parent: _staggerController,
+              curve: Interval(
+                start.clamp(0.0, 0.6),
+                end.clamp(0.0, 1.0),
+                curve: Curves.easeOutBack,
+              ),
+            ),
+          );
+
+      final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _staggerController,
+          curve: Interval(
+            start.clamp(0.0, 0.6),
+            end.clamp(0.0, 1.0),
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+
+      _slideAnimations.add(slideAnimation);
+      _fadeAnimations.add(fadeAnimation);
+    }
   }
 
   Future<void> loadReminders() async {
     setState(() => isLoading = true);
     final allReminders = await reminderManager.getAllReminders();
     setState(() => this.allReminders = allReminders);
+
+    // Initialize animations after reminders are loaded
+    _initializeAnimations();
+
     setState(() => isLoading = false);
+
+    // Start the stagger animation
+    _staggerController.reset();
+    _staggerController.forward();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromRGBO(15, 15, 15, 1),
       appBar: AppBar(
         scrolledUnderElevation: 0,
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        title: const Text("Reminders"),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: ShaderMask(
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [
+              Colors.amber.shade200,
+              Colors.amber,
+              Colors.orange.shade300,
+            ],
+          ).createShader(bounds),
+          child: const Text(
+            "Reminders",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w300,
+              color: Colors.white,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
         titleSpacing: 0,
         leading: Builder(
           builder: (context) {
-            return IconButton(
-              icon: const Icon(
-                Icons.menu_rounded,
-                color: Colors.white,
-                size: 30,
+            return Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1,
+                ),
               ),
-              onPressed: () => Scaffold.of(context).openDrawer(),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.menu_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
             );
           },
         ),
         actions: [
           if (isSelectionMode) ...[
-            AnimatedPopIcon(
-              child: IconButton(
-                icon: const Icon(Icons.cancel, color: Colors.amber, size: 30),
-                tooltip: 'Cancel selection',
-                onPressed: () {
-                  setState(() {
-                    selectedCards.clear();
-                  });
-                },
+            Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.amber.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: AnimatedPopIcon(
+                child: IconButton(
+                  icon: const Icon(Icons.cancel, color: Colors.amber, size: 24),
+                  tooltip: 'Cancel selection',
+                  onPressed: () {
+                    setState(() {
+                      selectedCards.clear();
+                    });
+                  },
+                ),
               ),
             ),
 
-            Padding(
-              padding: EdgeInsets.only(right: 10),
+            Container(
+              margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.red.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
               child: AnimatedPopIcon(
                 child: IconButton(
-                  iconSize: 30,
-                  icon: const Icon(Icons.delete, color: Colors.redAccent),
+                  icon: const Icon(
+                    Icons.delete,
+                    color: Colors.redAccent,
+                    size: 24,
+                  ),
                   tooltip: "Delete Selected Reminders?",
 
                   onPressed: () async {
@@ -139,7 +256,31 @@ class _ReminderPageState extends State<ForgeReminderPage> with RouteAware {
                       setState(() => selectedCards.clear());
 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Reminder deleted")),
+                        SnackBar(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 2),
+                          content: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.red.shade600,
+                                  Colors.red.shade800,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            child: const Text(
+                              'Reminders deleted successfully!',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
                       );
                     }
                   },
@@ -204,9 +345,31 @@ class _ReminderPageState extends State<ForgeReminderPage> with RouteAware {
           ),
 
           const SizedBox(height: 10),
-          const Text(
+
+          // Elegant divider
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.amber.withValues(alpha: 0.6),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          Text(
             "Schedules",
-            style: TextStyle(fontSize: 16, color: Colors.white70),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w300,
+              color: Colors.amber.shade100,
+              letterSpacing: 0.5,
+            ),
           ),
 
           // Scrollable list of reminders
@@ -218,23 +381,35 @@ class _ReminderPageState extends State<ForgeReminderPage> with RouteAware {
                 final reminder = allReminders[index];
                 final isSelected = selectedCards.contains(reminder.id);
 
-                return Padding(
-                  key: ValueKey(reminder.id),
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: ReminderCard(
-                    reminder: reminder,
-                    isSelected: isSelected,
-                    isSelectionMode: isSelectionMode,
-                    onSelectToggle: (id) {
-                      setState(() {
-                        if (selectedCards.contains(id)) {
-                          selectedCards.remove(id);
-                        } else {
-                          selectedCards.add(id);
-                        }
-                      });
-                    },
-                    onRefresh: loadReminders, // Refresh after status change
+                // Ensure we have animations for this index
+                if (index >= _slideAnimations.length ||
+                    index >= _fadeAnimations.length) {
+                  return const SizedBox.shrink();
+                }
+
+                return SlideTransition(
+                  position: _slideAnimations[index],
+                  child: FadeTransition(
+                    opacity: _fadeAnimations[index],
+                    child: Padding(
+                      key: ValueKey(reminder.id),
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: ReminderCard(
+                        reminder: reminder,
+                        isSelected: isSelected,
+                        isSelectionMode: isSelectionMode,
+                        onSelectToggle: (id) {
+                          setState(() {
+                            if (selectedCards.contains(id)) {
+                              selectedCards.remove(id);
+                            } else {
+                              selectedCards.add(id);
+                            }
+                          });
+                        },
+                        onRefresh: loadReminders, // Refresh after status change
+                      ),
+                    ),
                   ),
                 );
               },
