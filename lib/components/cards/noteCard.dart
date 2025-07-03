@@ -11,6 +11,7 @@ class NoteCard extends StatefulWidget {
   final bool isSelected;
   final bool isSelectionMode;
   final Function(String id)? onSelectToggle;
+  final VoidCallback? onRefresh;
 
   const NoteCard({
     super.key,
@@ -18,6 +19,7 @@ class NoteCard extends StatefulWidget {
     required this.isSelected,
     required this.isSelectionMode,
     required this.onSelectToggle,
+    this.onRefresh,
   });
 
   @override
@@ -131,6 +133,7 @@ class _NoteCardState extends State<NoteCard> {
                       setState(() {
                         widget.note.isBookmarked = newStatus;
                       });
+                      widget.onRefresh?.call();
                     },
                   ),
                 ],

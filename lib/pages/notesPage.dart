@@ -450,6 +450,7 @@ class _ForgeNotesState extends State<ForgeNotesPage>
                               : selectedNotes.add(id);
                         });
                       },
+                      onRefresh: () => loadNotes(),
                     ),
                   ),
                 ),
