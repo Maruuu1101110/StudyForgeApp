@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+
+// paths | pages
 import 'package:study_forge/pages/homePage.dart';
+import 'package:study_forge/pages/session_pages/studySession.dart';
 import 'package:study_forge/pages/notesPage.dart';
 import 'package:study_forge/pages/reminderPage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/tables/note_table.dart';
+
+// utils
+import 'package:study_forge/utils/navigationObservers.dart';
 
 class ForgeDrawer extends StatelessWidget {
   final String selectedTooltip;
@@ -12,6 +18,7 @@ class ForgeDrawer extends StatelessWidget {
   final VoidCallback? onHome;
   final VoidCallback? onNotePage;
   final VoidCallback? onReminderPage;
+  final VoidCallback? onStudySessionPage;
   final VoidCallback? onSettings;
 
   ForgeDrawer({
@@ -22,6 +29,7 @@ class ForgeDrawer extends StatelessWidget {
     this.onHome,
     this.onNotePage,
     this.onReminderPage,
+    this.onStudySessionPage,
     this.onSettings,
   });
 
@@ -98,7 +106,24 @@ class ForgeDrawer extends StatelessWidget {
                     onReminderPage ??
                     () => Navigator.of(context).push(
                       PageRouteBuilder(
-                        pageBuilder: (_, __, ___) => ForgeReminderPage(),
+                        pageBuilder: (_, __, ___) =>
+                            ForgeReminderPage(source: NavigationSource.sidebar),
+                        transitionsBuilder: (_, animation, __, child) =>
+                            FadeTransition(opacity: animation, child: child),
+                      ),
+                    ),
+              ),
+
+              _SidebarIcon(
+                icon: Icons.school_outlined,
+                tooltip: "Study Sessions",
+                isSelected: selectedTooltip == "Study Sessions",
+                onPressed:
+                    onStudySessionPage ??
+                    () => Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) =>
+                            StudySessionPage(source: NavigationSource.sidebar),
                         transitionsBuilder: (_, animation, __, child) =>
                             FadeTransition(opacity: animation, child: child),
                       ),
