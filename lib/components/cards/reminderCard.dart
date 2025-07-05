@@ -51,6 +51,7 @@ class ReminderCard extends StatelessWidget {
       key: ValueKey(reminder.id),
       elevation: isSelected ? 4 : 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shadowColor: Colors.amber.withValues(alpha: 0.5),
       color: isSelected
           ? const Color.fromRGBO(28, 28, 28, 1)
           : const Color.fromRGBO(20, 20, 20, 1),
