@@ -14,8 +14,6 @@ import 'package:study_forge/utils/navigationObservers.dart';
 
 // pages
 
-enum NavigationSource { sidebar, homePage, direct }
-
 class ForgeNotesPage extends StatefulWidget {
   final NavigationSource source;
   const ForgeNotesPage({super.key, required this.source});
