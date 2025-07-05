@@ -3,14 +3,25 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/pages/editor_pages/reminderEditPage.dart';
+import 'package:study_forge/pages/session_pages/sessionEditPage.dart';
 
 import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/tables/reminder_table.dart';
+import 'package:study_forge/tables/room_table.dart';
 
 class FloatingSpeedDial extends StatelessWidget {
   final bool? isNotes;
   final bool? isReminders;
-  const FloatingSpeedDial({super.key, this.isNotes, this.isReminders});
+  final bool? isStudySessions;
+  final VoidCallback? onCreateRoom;
+
+  const FloatingSpeedDial({
+    super.key,
+    this.isNotes,
+    this.isReminders,
+    this.isStudySessions,
+    this.onCreateRoom,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,12 +30,36 @@ class FloatingSpeedDial extends StatelessWidget {
       child: SpeedDial(
         icon: Icons.add,
         activeIcon: Icons.close,
-        buttonSize: const Size(55, 55),
+        buttonSize: const Size(45, 45),
         backgroundColor: Colors.amber,
+        gradientBoxShape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.amber.shade600, Colors.orange.shade600],
+        ),
         overlayColor: const Color.fromRGBO(0, 0, 0, 0.1),
         childMargin: const EdgeInsets.only(right: 2),
         spaceBetweenChildren: 10,
         children: [
+          SpeedDialChild(
+            visible: isStudySessions ?? false,
+            backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
+            labelBackgroundColor: Colors.transparent,
+            labelShadow: [],
+            child: const Icon(Icons.meeting_room, color: Colors.amber),
+            label: 'New Study Room',
+            onTap: () => Navigator.of(context).push(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) =>
+                    RoomEditPage(roomTableManager: RoomTableManager()),
+
+                transitionsBuilder: (_, animation, __, child) =>
+                    FadeTransition(opacity: animation, child: child),
+              ),
+            ),
+          ),
+
           SpeedDialChild(
             visible: isNotes ?? false,
             backgroundColor: const Color.fromRGBO(30, 30, 30, 1),

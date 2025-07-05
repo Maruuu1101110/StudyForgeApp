@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:study_forge/utils/navigationObservers.dart';
 import 'package:study_forge/pages/reminderPage.dart';
 import 'package:study_forge/main.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -109,7 +110,8 @@ class NotificationService {
     }
     navigatorKey.currentState?.push(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => ForgeReminderPage(),
+        pageBuilder: (_, __, ___) =>
+            ForgeReminderPage(source: NavigationSource.direct),
         transitionsBuilder: (_, animation, __, child) =>
             FadeTransition(opacity: animation, child: child),
       ),

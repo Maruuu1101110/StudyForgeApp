@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:study_forge/models/note_model.dart';
 import 'package:study_forge/models/reminder_model.dart';
 import 'package:study_forge/models/user_profile_model.dart';
+import 'package:study_forge/pages/session_pages/studySession.dart';
 import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/tables/reminder_table.dart';
 
@@ -20,6 +21,7 @@ import 'package:study_forge/pages/editor_pages/reminderEditPage.dart';
 // utils
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:study_forge/utils/gamification_service.dart';
+import 'package:study_forge/utils/navigationObservers.dart';
 
 class ForgeHomePage extends StatefulWidget {
   const ForgeHomePage({super.key});
@@ -140,6 +142,17 @@ class _ForgeHomeState extends State<ForgeHomePage>
       PageRouteBuilder(
         pageBuilder: (_, __, ___) =>
             ForgeNotesPage(source: NavigationSource.homePage),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
+  }
+
+  void loadStudySession() async {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) =>
+            StudySessionPage(source: NavigationSource.homePage),
         transitionsBuilder: (_, animation, __, child) =>
             FadeTransition(opacity: animation, child: child),
       ),
@@ -420,7 +433,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     Colors.black.withValues(alpha: 0.1),
                     Colors.transparent,
                   ],
-                  onTap: () => _onStudySessionCompleted(),
+                  onTap: loadStudySession,
                 ),
               ),
               const SizedBox(width: 16),
@@ -983,18 +996,6 @@ class _ForgeHomeState extends State<ForgeHomePage>
     }
   }
 
-  Future<void> _onStudySessionCompleted() async {
-    final oldProfile = userProfile;
-    final newProfile = await gamificationService.recordStudySession();
-
-    setState(() => userProfile = newProfile);
-
-    // same gamification check but for study sessions
-    if (oldProfile != null) {
-      await _showGamificationNotifications(oldProfile, newProfile, 25);
-    }
-  }
-
   Future<void> _showGamificationNotifications(
     UserProfile oldProfile,
     UserProfile newProfile,
@@ -1002,7 +1003,6 @@ class _ForgeHomeState extends State<ForgeHomePage>
   ) async {
     int delay = 0;
 
-    // level up show fist
     if (GamificationService.didLevelUp(oldProfile, newProfile)) {
       Future.delayed(Duration(milliseconds: delay), () {
         _showLevelUpCelebration(newProfile.level);
