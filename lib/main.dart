@@ -5,6 +5,7 @@ import 'package:device_preview/device_preview.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/tables/reminder_table.dart';
+import 'package:study_forge/tables/room_table.dart';
 import 'package:study_forge/tables/user_profile_table.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
@@ -26,6 +27,7 @@ void main() async {
 
   ReminderManager().ensureReminderTableExists();
   NoteManager().ensureNoteTableExists();
+  RoomTableManager.ensureRoomTableExists();
   UserProfileManager().ensureUserProfileTableExists();
 
   final notificationService = NotificationService();
