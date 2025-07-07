@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:study_forge/tables/note_table.dart';
@@ -14,16 +15,18 @@ import 'package:timezone/data/latest.dart' as tz;
 // components
 import 'utils/navigationObservers.dart';
 import 'package:study_forge/utils/notification_service.dart';
+import 'package:study_forge/utils/file_manager_service.dart';
 
 // pages
 import 'package:study_forge/pages/homePage.dart';
 
-final GlobalKey<NavigatorState> navigatorKey =
-    GlobalKey<NavigatorState>(); // for notification OnTap navigation
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
+
+  await FileManagerService.instance.requestStoragePermissions();
 
   ReminderManager().ensureReminderTableExists();
   NoteManager().ensureNoteTableExists();
@@ -32,6 +35,9 @@ void main() async {
 
   final notificationService = NotificationService();
   await notificationService.initNotif();
+
+  // dotenv
+  await dotenv.load(fileName: "assets/.env");
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
@@ -46,9 +52,14 @@ void main() async {
   );
 }
 
-class StudyForge extends StatelessWidget {
+class StudyForge extends StatefulWidget {
   const StudyForge({super.key});
 
+  @override
+  State<StudyForge> createState() => _StudyForgeState();
+}
+
+class _StudyForgeState extends State<StudyForge> {
   @override
   Widget build(BuildContext context) {
     Color appBarColor = const Color.fromARGB(255, 15, 15, 15);
