@@ -2,7 +2,7 @@ name: study_forge
 description: "A personal app for my personal preferences."
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 1.1.2+12
+version: 1.1.4+14
 
 environment:
   sdk: ^3.8.1
@@ -17,6 +17,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_speed_dial: ^7.0.0
+  flutter_dotenv: ^5.2.1
   sqflite: ^2.0.0+3
   path_provider: ^2.1.5
   uuid: ^4.5.1
@@ -35,6 +36,10 @@ dependencies:
   lottie: ^3.3.1
   image_picker: ^1.1.2
   flutter_colorpicker: ^1.1.0
+  file_picker: ^8.1.4
+  syncfusion_flutter_pdfviewer: ^30.1.38
+  share_plus: ^10.1.2
+  dio: ^5.8.0+1
 
 dev_dependencies:
   flutter_test:
@@ -62,4 +67,5 @@ flutter:
     - assets/sf_logo.png
     - assets/sf_logo_nobg.png
     - assets/lottie/animated_logo.gif
+    - assets/.env
 
