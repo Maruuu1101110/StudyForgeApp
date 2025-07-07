@@ -55,6 +55,13 @@ It is still in its early stages hence the lack of features but here are the feat
 - Context-aware navigation improvements
 - Bug fixes and performance optimizations
 
+## Patch 1.1.5: July 7, 2025 (BETA)
+- Redesigned Study Session UI/UX
+- Room Features for Study Session page
+- New AI assitant (study buddy)
+- PDF file viewer with floating window
+- Quick message widget for AI on Home Page
+
 
 <br />
 
