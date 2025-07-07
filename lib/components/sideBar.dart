@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:study_forge/pages/aurora_pages/aurora_messaging_panel.dart';
 
 // paths | pages
 import 'package:study_forge/pages/homePage.dart';
@@ -124,6 +125,21 @@ class ForgeDrawer extends StatelessWidget {
                       PageRouteBuilder(
                         pageBuilder: (_, __, ___) =>
                             StudySessionPage(source: NavigationSource.sidebar),
+                        transitionsBuilder: (_, animation, __, child) =>
+                            FadeTransition(opacity: animation, child: child),
+                      ),
+                    ),
+              ),
+
+              _SidebarIcon(
+                icon: Icons.chat_bubble_outline,
+                tooltip: "Chat with Aurora",
+                isSelected: selectedTooltip == "Aurora",
+                onPressed:
+                    onStudySessionPage ??
+                    () => Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) => AuroraChatPage(),
                         transitionsBuilder: (_, animation, __, child) =>
                             FadeTransition(opacity: animation, child: child),
                       ),

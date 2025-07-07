@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'dart:io';
 
 // database
 import 'package:study_forge/models/note_model.dart';
 import 'package:study_forge/models/reminder_model.dart';
 import 'package:study_forge/models/user_profile_model.dart';
+import 'package:study_forge/pages/aurora_pages/aurora_messaging_panel.dart';
 import 'package:study_forge/pages/session_pages/studySession.dart';
 import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/tables/reminder_table.dart';
@@ -32,6 +35,8 @@ class ForgeHomePage extends StatefulWidget {
 
 class _ForgeHomeState extends State<ForgeHomePage>
     with TickerProviderStateMixin {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _textFieldFocusNode = FocusNode();
   final noteManager = NoteManager();
   final reminderManager = ReminderManager();
   final gamificationService = GamificationService();
@@ -40,9 +45,13 @@ class _ForgeHomeState extends State<ForgeHomePage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  Set<String> selectedNotes = {};
+  List<Note> searchResults = [];
+
   // user profile stuff for gamification bs
   UserProfile? userProfile;
   bool isLoadingProfile = true;
+  static const int _maxMessageLength = 1000;
 
   @override
   void initState() {
@@ -74,7 +83,6 @@ class _ForgeHomeState extends State<ForgeHomePage>
           CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
         );
 
-    // start animation
     _fadeController.forward();
     _slideController.forward();
   }
@@ -159,8 +167,18 @@ class _ForgeHomeState extends State<ForgeHomePage>
     );
   }
 
-  Set<String> selectedNotes = {};
-  List<Note> searchResults = [];
+  void _sendMessage() {
+    final quickText = _controller.text.trim();
+    _controller.clear();
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => AuroraChatPage(quickMessage: quickText),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -316,6 +334,10 @@ class _ForgeHomeState extends State<ForgeHomePage>
           ),
           const SizedBox(height: 40),
 
+          _buildAIMessagePanel(),
+
+          const SizedBox(height: 40),
+
           // quick action buttons grid
           _buildQuickActionsGrid(),
 
@@ -330,6 +352,102 @@ class _ForgeHomeState extends State<ForgeHomePage>
           _buildRecentActivity(),
 
           const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAIMessagePanel() {
+    return Container(
+      decoration: BoxDecoration(color: Colors.transparent),
+      child: Column(
+        children: [
+          if (_controller.text.isNotEmpty)
+            Padding(
+              padding: EdgeInsetsGeometry.all(0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    '${_controller.text.length}/$_maxMessageLength',
+                    style: TextStyle(
+                      color: _controller.text.length > _maxMessageLength
+                          ? Colors.red.shade300
+                          : Colors.grey.shade400,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withValues(alpha: 0.4),
+                        Colors.black.withValues(alpha: 0.2),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _controller.text.length > _maxMessageLength
+                          ? Colors.red.withValues(alpha: 0.5)
+                          : Colors.white.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: TextField(
+                      controller: _controller,
+                      focusNode: _textFieldFocusNode,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      decoration: InputDecoration(
+                        hintText: 'Ask Aurora something...',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 5,
+                        ),
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                      onChanged: (_) => setState(() {}),
+                      minLines: 1,
+                      maxLines: 2,
+                      maxLength: null,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                child: IconButton(
+                  onPressed:
+                      _controller.text.trim().isNotEmpty &&
+                          _controller.text.length <= _maxMessageLength
+                      ? _sendMessage
+                      : null,
+
+                  icon: Icon(
+                    Icons.send_rounded,
+                    color:
+                        _controller.text.trim().isNotEmpty &&
+                            _controller.text.length <= _maxMessageLength
+                        ? Colors.amber
+                        : Colors.white.withValues(alpha: 0.5),
+                    size: 30,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
