@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:study_forge/components/sideBar.dart';
 import 'package:study_forge/components/cards/roomsCard.dart';
 import 'package:study_forge/components/speedDial.dart';
+import 'package:study_forge/pages/room_pages/room_lobby_page.dart';
 import 'package:study_forge/utils/navigationObservers.dart';
 import 'package:study_forge/models/room_model.dart';
 import 'package:study_forge/tables/room_table.dart';
-import 'package:study_forge/pages/session_pages/zenZonePage.dart';
 
 class StudySessionPage extends StatefulWidget {
   final NavigationSource source;
@@ -268,7 +268,7 @@ class _StudySessionPageState extends State<StudySessionPage> {
                                   Navigator.of(context).push(
                                     PageRouteBuilder(
                                       pageBuilder: (_, __, ___) =>
-                                          ZenZonePage(room: room),
+                                          RoomLobbyPage(room: room),
                                       transitionsBuilder:
                                           (_, animation, __, child) =>
                                               FadeTransition(
