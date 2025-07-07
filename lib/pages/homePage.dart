@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:convert';
-import 'dart:io';
 
 // database
 import 'package:study_forge/models/note_model.dart';
