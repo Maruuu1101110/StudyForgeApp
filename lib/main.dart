@@ -3,12 +3,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:device_preview/device_preview.dart';
+import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/tables/reminder_table.dart';
 import 'package:study_forge/tables/room_table.dart';
 import 'package:study_forge/tables/user_profile_table.dart';
 import 'package:timezone/data/latest.dart' as tz;
+
+import 'package:study_forge/pages/ember_pages/chat_provider.dart';
 
 // custom widgets
 
@@ -45,9 +48,12 @@ void main() async {
   }
 
   runApp(
-    DevicePreview(
-      enabled: !kReleaseMode ? Platform.isLinux : false,
-      builder: (context) => StudyForge(),
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => ChatProvider())],
+      child: DevicePreview(
+        enabled: !kReleaseMode ? Platform.isLinux : false,
+        builder: (context) => StudyForge(),
+      ),
     ),
   );
 }
@@ -67,18 +73,42 @@ class _StudyForgeState extends State<StudyForge> {
       navigatorKey: navigatorKey,
       navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'StudyForge',
+
       theme: ThemeData(
         primaryColorDark: appBarColor,
         useMaterial3: true,
         bottomSheetTheme: BottomSheetThemeData(
           backgroundColor: Colors.transparent,
         ),
-        textTheme: ThemeData.dark().textTheme.apply(
-          bodyColor: Colors.white,
-          displayColor: Colors.white,
-          fontFamily: "Petrona",
+
+        textTheme: ThemeData.dark().textTheme.copyWith(
+          bodyLarge: const TextStyle(
+            color: Colors.white,
+            fontFamily: "Petrona",
+          ),
+          bodyMedium: const TextStyle(
+            color: Colors.white,
+            fontFamily: "Petrona",
+          ),
+          bodySmall: const TextStyle(
+            color: Colors.white70,
+            fontFamily: "Petrona",
+          ),
+          titleLarge: const TextStyle(
+            color: Colors.white,
+            fontFamily: "Petrona",
+          ),
+          titleMedium: const TextStyle(
+            color: Colors.white,
+            fontFamily: "Petrona",
+          ),
+          labelLarge: const TextStyle(
+            color: Colors.white,
+            fontFamily: "Petrona",
+          ),
         ),
+
         scaffoldBackgroundColor: appBarColor,
         appBarTheme: AppBarTheme(
           titleTextStyle: TextStyle(
@@ -90,6 +120,7 @@ class _StudyForgeState extends State<StudyForge> {
           backgroundColor: appBarColor,
         ),
       ),
+
       home: ForgeHomePage(),
     );
   }
