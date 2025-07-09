@@ -3,7 +3,7 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/pages/editor_pages/reminderEditPage.dart';
-import 'package:study_forge/pages/session_pages/sessionEditPage.dart';
+import 'package:study_forge/pages/editor_pages/roomEditPage.dart';
 
 import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/tables/reminder_table.dart';
