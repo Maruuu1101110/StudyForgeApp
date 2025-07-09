@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:study_forge/tables/room_table.dart';
 import 'package:study_forge/models/room_model.dart';
-import 'package:study_forge/pages/session_pages/sessionEditPage.dart';
+import 'package:study_forge/pages/editor_pages/roomEditPage.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class RoomCard extends StatefulWidget {
