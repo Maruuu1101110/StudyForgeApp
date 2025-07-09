@@ -16,6 +16,7 @@ flutter_launcher_icons:
 dependencies:
   flutter:
     sdk: flutter
+  provider: ^6.1.5
   flutter_speed_dial: ^7.0.0
   flutter_dotenv: ^5.2.1
   sqflite: ^2.0.0+3
@@ -61,6 +62,9 @@ flutter:
     - family: Petrona
       fonts:
         - asset: assets/fonts/Petrona-Regular.ttf
+    - family: SourceCodePro
+      fonts:
+        - asset: assets/fonts/SourceCodePro-Regular.ttf
 
   assets:
     - assets/system_icons/notification_icon.png
@@ -68,4 +72,6 @@ flutter:
     - assets/sf_logo_nobg.png
     - assets/lottie/animated_logo.gif
     - assets/.env
+    - assets/embers_assets/ember.png
+    - assets/embers_assets/ember_head.png
 
