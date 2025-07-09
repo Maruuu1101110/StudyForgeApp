@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:study_forge/models/room_model.dart';
 import 'package:study_forge/utils/file_manager_service.dart';
+import 'package:study_forge/utils/navigationObservers.dart';
 import 'package:study_forge/pages/room_pages/room_files_page.dart';
 
 class RoomLobbyPage extends StatefulWidget {
@@ -15,7 +16,7 @@ class RoomLobbyPage extends StatefulWidget {
 }
 
 class _RoomLobbyPageState extends State<RoomLobbyPage>
-    with TickerProviderStateMixin {
+    with RouteAware, TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
@@ -32,6 +33,23 @@ class _RoomLobbyPageState extends State<RoomLobbyPage>
     _setupAnimations();
     _loadRoomData();
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _slideController.dispose();
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() => _loadRoomData();
 
   void _setupAnimations() {
     _fadeController = AnimationController(
@@ -89,13 +107,6 @@ class _RoomLobbyPageState extends State<RoomLobbyPage>
       }
     }
     return Colors.amber;
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    _slideController.dispose();
-    super.dispose();
   }
 
   @override
