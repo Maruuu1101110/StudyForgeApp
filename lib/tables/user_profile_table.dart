@@ -138,13 +138,18 @@ class UserProfileManager {
     int newStreak = profile.studyStreak;
 
     if (daysDifference == 0) {
-      // same day, dont change streak
-      return profile;
+      // Already studied today, just update session count
+      final updatedProfile = profile.copyWith(
+        totalStudySessions: profile.totalStudySessions + 1,
+        lastStudyDate: now, // Optional, or keep as lastStudy
+      );
+      await updateUserProfile(updatedProfile);
+      return updatedProfile;
     } else if (daysDifference == 1) {
-      // next day, bump that streak
-      newStreak++;
+      // Next day, continue streak
+      newStreak = (profile.studyStreak == 0) ? 1 : profile.studyStreak + 1;
     } else {
-      // streak broken, back to square one
+      // Missed a day, reset streak
       newStreak = 1;
     }
 
