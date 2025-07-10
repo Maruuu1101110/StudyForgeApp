@@ -204,7 +204,7 @@ class _RoomEditPageState extends State<RoomEditPage> {
           IconButton(
             icon: Icon(
               Icons.save,
-              color: _isSaveEnabled ? Colors.amber : Colors.black,
+              color: _isSaveEnabled ? Colors.amber : Colors.amber,
             ),
             onPressed: _saveRoom,
           ),

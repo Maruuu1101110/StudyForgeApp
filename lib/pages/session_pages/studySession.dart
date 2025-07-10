@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:study_forge/components/sideBar.dart';
 import 'package:study_forge/components/cards/roomsCard.dart';
 import 'package:study_forge/components/speedDial.dart';
+import 'package:study_forge/pages/room_pages/room_lobby_page.dart';
 import 'package:study_forge/utils/navigationObservers.dart';
 import 'package:study_forge/models/room_model.dart';
 import 'package:study_forge/tables/room_table.dart';
-import 'package:study_forge/pages/session_pages/zenZonePage.dart';
 
 class StudySessionPage extends StatefulWidget {
   final NavigationSource source;
@@ -16,7 +16,7 @@ class StudySessionPage extends StatefulWidget {
   State<StudySessionPage> createState() => _StudySessionPageState();
 }
 
-class _StudySessionPageState extends State<StudySessionPage> {
+class _StudySessionPageState extends State<StudySessionPage> with RouteAware {
   List<Room> _rooms = [];
   bool _isLoading = true;
 
@@ -25,6 +25,21 @@ class _StudySessionPageState extends State<StudySessionPage> {
     super.initState();
     _loadRooms();
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() => _loadRooms();
 
   Future<void> _loadRooms() async {
     try {
@@ -113,15 +128,6 @@ class _StudySessionPageState extends State<StudySessionPage> {
           leading: Builder(
             builder: (context) {
               return Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
                 child: IconButton(
                   icon: const Icon(
                     Icons.menu_rounded,
@@ -268,7 +274,7 @@ class _StudySessionPageState extends State<StudySessionPage> {
                                   Navigator.of(context).push(
                                     PageRouteBuilder(
                                       pageBuilder: (_, __, ___) =>
-                                          ZenZonePage(room: room),
+                                          RoomLobbyPage(room: room),
                                       transitionsBuilder:
                                           (_, animation, __, child) =>
                                               FadeTransition(

@@ -264,15 +264,6 @@ class _ForgeNotesState extends State<ForgeNotesPage>
           leading: Builder(
             builder: (context) {
               return Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
                 child: IconButton(
                   icon: const Icon(
                     Icons.menu_rounded,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+//import 'package:study_forge/pages/ember_pages/ember_messaging_panel.dart';
+import 'package:study_forge/pages/ember_pages/ember_chat_provider.dart';
 
 // paths | pages
 import 'package:study_forge/pages/homePage.dart';
@@ -6,6 +8,7 @@ import 'package:study_forge/pages/session_pages/studySession.dart';
 import 'package:study_forge/pages/notesPage.dart';
 import 'package:study_forge/pages/reminderPage.dart';
 import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
+import 'package:study_forge/pages/settingsPage.dart';
 import 'package:study_forge/tables/note_table.dart';
 
 // utils
@@ -19,7 +22,8 @@ class ForgeDrawer extends StatelessWidget {
   final VoidCallback? onNotePage;
   final VoidCallback? onReminderPage;
   final VoidCallback? onStudySessionPage;
-  final VoidCallback? onSettings;
+  final VoidCallback? onSettingsPage;
+  final VoidCallback? onEmberPage;
 
   ForgeDrawer({
     super.key,
@@ -30,7 +34,8 @@ class ForgeDrawer extends StatelessWidget {
     this.onNotePage,
     this.onReminderPage,
     this.onStudySessionPage,
-    this.onSettings,
+    this.onSettingsPage,
+    this.onEmberPage,
   });
 
   final noteManager = NoteManager();
@@ -40,111 +45,150 @@ class ForgeDrawer extends StatelessWidget {
       backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
       width: 60,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Top section
-          Column(
-            children: [
-              const SizedBox(height: 40),
-              _SidebarIcon(
-                icon: Icons.note_add_outlined,
-                onPressed:
-                    onNewNote ??
-                    () => Navigator.of(context).push(
-                      PageRouteBuilder(
-                        pageBuilder: (_, __, ___) =>
-                            NoteEditPage(noteManager: noteManager, isMD: false),
-                        transitionsBuilder: (_, animation, __, child) =>
-                            FadeTransition(opacity: animation, child: child),
-                      ),
-                    ),
-                tooltip: "New Note",
-              ),
-              _SidebarIcon(
-                icon: Icons.folder_outlined,
-                onPressed: onBrowseFiles ?? () {},
-                tooltip: "Browse Files",
-              ),
+          // TOP SECTION
+          const SizedBox(height: 40),
+          _SidebarIcon(
+            icon: Icons.note_add_outlined,
+            onPressed:
+                onNewNote ??
+                () => Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) =>
+                        NoteEditPage(noteManager: noteManager, isMD: false),
+                    transitionsBuilder: (_, animation, __, child) =>
+                        FadeTransition(opacity: animation, child: child),
+                  ),
+                ),
+            tooltip: "New Note",
+          ),
+          _SidebarIcon(
+            icon: Icons.folder_outlined,
+            onPressed: onBrowseFiles ?? () {},
+            tooltip: "Browse Files",
+          ),
+          const Divider(color: Colors.white24, indent: 10, endIndent: 10),
 
-              const Divider(color: Colors.white24, indent: 10, endIndent: 10),
-
-              _SidebarIcon(
-                icon: Icons.home,
-                tooltip: "Home",
-                isSelected: selectedTooltip == "Home",
-                onPressed:
-                    onHome ??
-                    () => Navigator.of(context).push(
-                      PageRouteBuilder(
-                        pageBuilder: (_, __, ___) => ForgeHomePage(),
-                        transitionsBuilder: (_, animation, __, child) =>
-                            FadeTransition(opacity: animation, child: child),
-                      ),
-                    ),
+          // MID SCROLLABLE SECTION
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _SidebarIcon(
+                    icon: Icons.home,
+                    tooltip: "Home",
+                    isSelected: selectedTooltip == "Home",
+                    onPressed:
+                        onHome ??
+                        () => Navigator.of(context).push(
+                          PageRouteBuilder(
+                            pageBuilder: (_, __, ___) => ForgeHomePage(),
+                            transitionsBuilder: (_, animation, __, child) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                          ),
+                        ),
+                  ),
+                  _SidebarIcon(
+                    icon: Icons.notes,
+                    tooltip: "Notes",
+                    isSelected: selectedTooltip == "Notes",
+                    onPressed:
+                        onNotePage ??
+                        () => Navigator.of(context).push(
+                          PageRouteBuilder(
+                            pageBuilder: (_, __, ___) => ForgeNotesPage(
+                              source: NavigationSource.sidebar,
+                            ),
+                            transitionsBuilder: (_, animation, __, child) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                          ),
+                        ),
+                  ),
+                  _SidebarIcon(
+                    icon: Icons.calendar_month,
+                    tooltip: "Reminders",
+                    isSelected: selectedTooltip == "Reminders",
+                    onPressed:
+                        onReminderPage ??
+                        () => Navigator.of(context).push(
+                          PageRouteBuilder(
+                            pageBuilder: (_, __, ___) => ForgeReminderPage(
+                              source: NavigationSource.sidebar,
+                            ),
+                            transitionsBuilder: (_, animation, __, child) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                          ),
+                        ),
+                  ),
+                  _SidebarIcon(
+                    icon: Icons.school_outlined,
+                    tooltip: "Study Sessions",
+                    isSelected: selectedTooltip == "Study Sessions",
+                    onPressed:
+                        onStudySessionPage ??
+                        () => Navigator.of(context).push(
+                          PageRouteBuilder(
+                            pageBuilder: (_, __, ___) => StudySessionPage(
+                              source: NavigationSource.sidebar,
+                            ),
+                            transitionsBuilder: (_, animation, __, child) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                          ),
+                        ),
+                  ),
+                  //for (int i = 0; i < 10; i++) // Debug: Ember spam
+                  _SidebarIcon(
+                    icon: Icons.chat_bubble_outline,
+                    tooltip: "Chat with Ember",
+                    isSelected: selectedTooltip == "Ember",
+                    onPressed:
+                        onStudySessionPage ??
+                        () => Navigator.of(context).push(
+                          PageRouteBuilder(
+                            pageBuilder: (_, __, ___) => EmberChatPage(),
+                            transitionsBuilder: (_, animation, __, child) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                          ),
+                        ),
+                  ),
+                ],
               ),
-
-              _SidebarIcon(
-                icon: Icons.notes,
-                tooltip: "Notes",
-                isSelected: selectedTooltip == "Notes",
-                onPressed:
-                    onNotePage ??
-                    () => Navigator.of(context).push(
-                      PageRouteBuilder(
-                        pageBuilder: (_, __, ___) =>
-                            ForgeNotesPage(source: NavigationSource.sidebar),
-                        transitionsBuilder: (_, animation, __, child) =>
-                            FadeTransition(opacity: animation, child: child),
-                      ),
-                    ),
-              ),
-              _SidebarIcon(
-                icon: Icons.calendar_month,
-                tooltip: "Reminders",
-                isSelected: selectedTooltip == "Reminders",
-                onPressed:
-                    onReminderPage ??
-                    () => Navigator.of(context).push(
-                      PageRouteBuilder(
-                        pageBuilder: (_, __, ___) =>
-                            ForgeReminderPage(source: NavigationSource.sidebar),
-                        transitionsBuilder: (_, animation, __, child) =>
-                            FadeTransition(opacity: animation, child: child),
-                      ),
-                    ),
-              ),
-
-              _SidebarIcon(
-                icon: Icons.school_outlined,
-                tooltip: "Study Sessions",
-                isSelected: selectedTooltip == "Study Sessions",
-                onPressed:
-                    onStudySessionPage ??
-                    () => Navigator.of(context).push(
-                      PageRouteBuilder(
-                        pageBuilder: (_, __, ___) =>
-                            StudySessionPage(source: NavigationSource.sidebar),
-                        transitionsBuilder: (_, animation, __, child) =>
-                            FadeTransition(opacity: animation, child: child),
-                      ),
-                    ),
-              ),
-            ],
+            ),
           ),
 
-          // Bottom section
-          Column(
-            children: [
-              const Divider(color: Colors.white24, indent: 10, endIndent: 10),
-              _SidebarIcon(
-                icon: Icons.settings_outlined,
-                tooltip: "Settings",
-                isSelected: selectedTooltip == "Settings",
-                onPressed: () {},
-              ),
-              const SizedBox(height: 20),
-            ],
+          // BOTTOM SECTION
+          const Divider(color: Colors.white24, indent: 10, endIndent: 10),
+
+          _SidebarIcon(
+            icon: Icons.settings_outlined,
+            tooltip: "Settings",
+            isSelected: selectedTooltip == "Settings",
+            onPressed:
+                onSettingsPage ??
+                () => Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => SettingsPage(),
+                    transitionsBuilder: (_, animation, __, child) =>
+                        FadeTransition(opacity: animation, child: child),
+                  ),
+                ),
           ),
+          const SizedBox(height: 20),
         ],
       ),
     );

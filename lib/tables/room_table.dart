@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'package:study_forge/models/room_model.dart';
 import 'package:flutter/foundation.dart';
+import 'package:study_forge/utils/file_manager_service.dart';
 
 class RoomTableManager {
   static Database? _database;
@@ -79,11 +80,29 @@ class RoomTableManager {
   static Future<int> insertRoom(Room room) async {
     final db = await database;
     try {
-      return await db.insert(
+      final roomId = await db.insert(
         _tableName,
         room.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
+
+      // Create file system folder for the room
+      final fileManager = FileManagerService.instance;
+      final folderCreated = await fileManager.createRoomFolder(
+        roomId: roomId,
+        subject: room.subject,
+        description: room.description,
+      );
+
+      if (!folderCreated) {
+        if (kDebugMode) {
+          print(
+            'Warning: Failed to create file system folder for room $roomId',
+          );
+        }
+      }
+
+      return roomId;
     } catch (e) {
       throw Exception('Failed to insert room: $e');
     }
@@ -160,7 +179,26 @@ class RoomTableManager {
   static Future<int> deleteRoom(int id) async {
     final db = await database;
     try {
-      return await db.delete(_tableName, where: 'id = ?', whereArgs: [id]);
+      // Delete from database first
+      final deletedRows = await db.delete(
+        _tableName,
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      // Clean up file system folder
+      if (deletedRows > 0) {
+        final fileManager = FileManagerService.instance;
+        final folderDeleted = await fileManager.deleteRoomFolder(id);
+
+        if (!folderDeleted) {
+          if (kDebugMode) {
+            print('Warning: Failed to delete file system folder for room $id');
+          }
+        }
+      }
+
+      return deletedRows;
     } catch (e) {
       throw Exception('Failed to delete room: $e');
     }
@@ -211,6 +249,27 @@ class RoomTableManager {
     } catch (e) {
       throw Exception('Failed to update last accessed time: $e');
     }
+  }
+
+  // for study session
+  Future<int> updateTotalSessions(int roomId, int newCount) async {
+    final db = await database;
+    return await db.update(
+      _tableName,
+      {'totalSessions': newCount},
+      where: 'id = ?',
+      whereArgs: [roomId],
+    );
+  }
+
+  Future<int> updateStudyTime(int roomId, int totalMinutes) async {
+    final db = await database;
+    return await db.update(
+      _tableName,
+      {'totalStudyTime': totalMinutes},
+      where: 'id = ?',
+      whereArgs: [roomId],
+    );
   }
 
   // increment session count and add study time
@@ -350,6 +409,36 @@ class RoomTableManager {
       );
     } catch (e) {
       throw Exception('Failed to delete rooms: $e');
+    }
+  }
+
+  // sync existing rooms with file system (create missing folders)
+  static Future<void> syncRoomsWithFileSystem() async {
+    try {
+      final rooms = await getAllRooms();
+      final fileManager = FileManagerService.instance;
+
+      for (final room in rooms) {
+        if (room.id != null) {
+          final folderExists = await fileManager.roomFolderExists(room.id!);
+          if (!folderExists) {
+            if (kDebugMode) {
+              print(
+                'Creating missing folder for room ${room.id}: ${room.subject}',
+              );
+            }
+            await fileManager.createRoomFolder(
+              roomId: room.id!,
+              subject: room.subject,
+              description: room.description,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error syncing rooms with file system: $e');
+      }
     }
   }
 }

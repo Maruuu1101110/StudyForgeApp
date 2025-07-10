@@ -1,10 +1,12 @@
-// This page is just temporary , it might change later along witht he study session approach
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:study_forge/models/room_model.dart';
+import 'package:study_forge/tables/room_table.dart';
+import 'package:study_forge/utils/navigationObservers.dart';
+import 'package:study_forge/pages/room_pages/room_files_page.dart';
+import 'package:study_forge/utils/file_manager_service.dart';
 
 class ZenZonePage extends StatefulWidget {
   final Room room;
@@ -16,14 +18,27 @@ class ZenZonePage extends StatefulWidget {
 }
 
 class _ZenZonePageState extends State<ZenZonePage>
-    with TickerProviderStateMixin {
+    with RouteAware, TickerProviderStateMixin {
   Timer? _timer;
-  int _seconds = 0;
-  int _minutes = 25;
   bool _isRunning = false;
   bool _isPaused = false;
+  bool _canLeave = true;
 
   TimerMode _currentMode = TimerMode.focus;
+
+  DateTime? _endTime;
+
+  // Store timer state for each mode
+  final Map<TimerMode, int> _modeMinutes = {
+    TimerMode.focus: 25,
+    TimerMode.shortBreak: 5,
+    TimerMode.longBreak: 15,
+  };
+  final Map<TimerMode, int> _modeSeconds = {
+    TimerMode.focus: 0,
+    TimerMode.shortBreak: 0,
+    TimerMode.longBreak: 0,
+  };
 
   // animations
   late AnimationController _pulseController;
@@ -31,20 +46,61 @@ class _ZenZonePageState extends State<ZenZonePage>
   late Animation<double> _pulseAnimation;
   late Animation<double> _rotationAnimation;
 
-  // session trackingg (tempate for now)
+  // session tracking (template for now)
   int _totalFocusTime = 0; // in seconds
   int _totalShortBreakTime = 0; // in seconds
   int _totalLongBreakTime = 0; // in seconds
-  int _focusSessionsCompleted = 0;
-  int _shortBreakSessionsCompleted = 0;
-  int _longBreakSessionsCompleted = 0;
-  DateTime? _sessionStartTime;
+  late int _totalSessions;
+  int _remainingTimeInSeconds = 0;
+
+  RoomTableManager roomManager = RoomTableManager();
+
+  List<FileSystemEntity> _roomFiles = [];
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _resetTimer();
+    _totalSessions = widget.room.totalSessions;
+    _loadRoomFiles();
+  }
+
+  void _loadRoomFiles() async {
+    if (widget.room.id != null) {
+      try {
+        final files = await FileManagerService.instance.getRoomFiles(
+          widget.room.id!,
+        );
+        setState(() {
+          _roomFiles = files;
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error loading files: $e')));
+        }
+      }
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() => _resetTimer();
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pulseController.dispose();
+    _rotationController.dispose();
+    routeObserver.unsubscribe(this);
+    super.dispose();
   }
 
   void _initializeAnimations() {
@@ -70,49 +126,80 @@ class _ZenZonePageState extends State<ZenZonePage>
     _pulseController.repeat(reverse: true);
   }
 
-  // TODO : change to use the rooms info soon
-  void _resetTimer() {
+  void _resetTimer({int? min, int? sec}) {
     setState(() {
-      switch (_currentMode) {
+      _canLeave = true;
+      // Only reset the current mode's minutes/seconds
+      _modeMinutes[_currentMode] = min ?? _defaultMinutes(_currentMode);
+      _modeSeconds[_currentMode] = sec ?? 0;
+      _timer?.cancel();
+      _rotationController.reset();
+      _isRunning = false;
+      _isPaused = false;
+      _endTime = null;
+    });
+  }
+
+  // Helper to get default minutes by mode
+  int _defaultMinutes(TimerMode mode) {
+    switch (mode) {
+      case TimerMode.focus:
+        return 25;
+      case TimerMode.shortBreak:
+        return 5;
+      case TimerMode.longBreak:
+        return 15;
+    }
+  }
+
+  void _incrementLiveTimer(TimerMode mode) {
+    setState(() {
+      switch (mode) {
         case TimerMode.focus:
-          _minutes = 25;
-          _seconds = 0;
+          _totalFocusTime++;
           break;
         case TimerMode.shortBreak:
-          _minutes = 5;
-          _seconds = 0;
+          _totalShortBreakTime++;
           break;
         case TimerMode.longBreak:
-          _minutes = 15;
-          _seconds = 0;
+          _totalLongBreakTime++;
           break;
       }
     });
   }
 
   void _startTimer() {
-    if (!_isRunning) {
-      _sessionStartTime = DateTime.now();
-      setState(() {
-        _isRunning = true;
-        _isPaused = false;
-      });
+    if (_isRunning) return;
+    setState(() {
+      _canLeave = false;
+      _isRunning = true;
+      _isPaused = false;
+    });
 
-      _rotationController.repeat();
+    final totalSeconds =
+        (_modeMinutes[_currentMode] ?? _defaultMinutes(_currentMode)) * 60 +
+        (_modeSeconds[_currentMode] ?? 0);
 
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _sessionTotalSeconds = totalSeconds;
+
+    _endTime = DateTime.now().add(Duration(seconds: totalSeconds));
+    _rotationController.repeat();
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final now = DateTime.now();
+      final remaining = _endTime!.difference(now);
+      final remainingSecs = remaining.inSeconds;
+      if (remainingSecs > 0) {
         setState(() {
-          if (_seconds > 0) {
-            _seconds--;
-          } else if (_minutes > 0) {
-            _minutes--;
-            _seconds = 59;
-          } else {
-            _onTimerComplete();
-          }
+          _remainingTimeInSeconds = remainingSecs;
+          _modeMinutes[_currentMode] = remaining.inMinutes;
+          _modeSeconds[_currentMode] = remaining.inSeconds % 60;
+          _incrementLiveTimer(_currentMode);
         });
-      });
-    }
+      } else {
+        _onTimerComplete();
+      }
+    });
   }
 
   void _pauseTimer() {
@@ -127,22 +214,30 @@ class _ZenZonePageState extends State<ZenZonePage>
 
   void _resumeTimer() {
     if (_isRunning && _isPaused) {
+      setState(() => _isPaused = false);
+      final totalSeconds =
+          (_modeMinutes[_currentMode] ?? _defaultMinutes(_currentMode)) * 60 +
+          (_modeSeconds[_currentMode] ?? 0);
+
+      _sessionTotalSeconds = totalSeconds;
+
+      _endTime = DateTime.now().add(Duration(seconds: totalSeconds));
       _rotationController.repeat();
-      setState(() {
-        _isPaused = false;
-      });
 
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        setState(() {
-          if (_seconds > 0) {
-            _seconds--;
-          } else if (_minutes > 0) {
-            _minutes--;
-            _seconds = 59;
-          } else {
-            _onTimerComplete();
-          }
-        });
+        final now = DateTime.now();
+        final remaining = _endTime!.difference(now);
+        final remainingSecs = remaining.inSeconds;
+        if (remainingSecs > 0) {
+          setState(() {
+            _remainingTimeInSeconds = remainingSecs;
+            _modeMinutes[_currentMode] = remaining.inMinutes;
+            _modeSeconds[_currentMode] = remaining.inSeconds % 60;
+            _incrementLiveTimer(_currentMode);
+          });
+        } else {
+          _onTimerComplete();
+        }
       });
     }
   }
@@ -152,64 +247,44 @@ class _ZenZonePageState extends State<ZenZonePage>
     _rotationController.stop();
     _rotationController.reset();
 
-    if (_sessionStartTime != null) {
-      final elapsed = DateTime.now().difference(_sessionStartTime!).inSeconds;
-      switch (_currentMode) {
-        case TimerMode.focus:
-          _totalFocusTime += elapsed;
-          break;
-        case TimerMode.shortBreak:
-          _totalShortBreakTime += elapsed;
-          break;
-        case TimerMode.longBreak:
-          _totalLongBreakTime += elapsed;
-          break;
-      }
-    }
-
     setState(() {
       _isRunning = false;
       _isPaused = false;
+      _canLeave = true;
     });
     _resetTimer();
   }
 
-  void _onTimerComplete() {
+  void _onTimerComplete() async {
     _timer?.cancel();
     _rotationController.stop();
     _rotationController.reset();
 
-    switch (_currentMode) {
-      case TimerMode.focus:
-        _focusSessionsCompleted++;
-        _totalFocusTime += 25 * 60; // 25 minutes in seconds
-        break;
-      case TimerMode.shortBreak:
-        _shortBreakSessionsCompleted++;
-        _totalShortBreakTime += 5 * 60; // 5 minutes in seconds
-        break;
-      case TimerMode.longBreak:
-        _longBreakSessionsCompleted++;
-        _totalLongBreakTime += 15 * 60; // 15 minutes in seconds
-        break;
+    setState(() {
+      _isRunning = false;
+      _isPaused = false;
+      _canLeave = true;
+    });
+
+    // update session count
+    if (_currentMode == TimerMode.focus) {
+      _totalSessions++;
+      await roomManager.updateTotalSessions(widget.room.id!, _totalSessions);
     }
+
+    final totalMinutes = _totalFocusTime ~/ 60;
+    await roomManager.updateStudyTime(widget.room.id!, totalMinutes);
 
     HapticFeedback.heavyImpact();
 
     _showSessionCompletedDialog();
-
-    setState(() {
-      _isRunning = false;
-      _isPaused = false;
-    });
-
     _suggestNextMode();
   }
 
   void _suggestNextMode() {
     TimerMode nextMode;
     if (_currentMode == TimerMode.focus) {
-      if (_focusSessionsCompleted % 4 == 0) {
+      if (widget.room.totalSessions % 4 == 0) {
         nextMode = TimerMode.longBreak;
       } else {
         nextMode = TimerMode.shortBreak;
@@ -217,7 +292,6 @@ class _ZenZonePageState extends State<ZenZonePage>
     } else {
       nextMode = TimerMode.focus;
     }
-
     _showModeChangeDialog(nextMode);
   }
 
@@ -263,64 +337,22 @@ class _ZenZonePageState extends State<ZenZonePage>
               ),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Focus Sessions:',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        '$_focusSessionsCompleted',
-                        style: TextStyle(
-                          color: Colors.amber,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  _buildSessionStatRow(
+                    'Focus Sessions:',
+                    '${widget.room.totalSessions}',
+                    Colors.amber,
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Focus Time:',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        '${(_totalFocusTime / 60).floor()}m',
-                        style: TextStyle(
-                          color: Colors.amber,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  _buildSessionStatRow(
+                    'Focus Time:',
+                    '${(_totalFocusTime / 60).floor()}m',
+                    Colors.amber,
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Break Time:',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        '${((_totalShortBreakTime + _totalLongBreakTime) / 60).floor()}m',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  _buildSessionStatRow(
+                    'Break Time:',
+                    '${((_totalShortBreakTime + _totalLongBreakTime) / 60).floor()}m',
+                    Colors.green,
                   ),
                 ],
               ),
@@ -334,6 +366,25 @@ class _ZenZonePageState extends State<ZenZonePage>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSessionStatRow(String label, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 14,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(color: color, fontWeight: FontWeight.w600),
+        ),
+      ],
     );
   }
 
@@ -372,7 +423,7 @@ class _ZenZonePageState extends State<ZenZonePage>
               setState(() {
                 _currentMode = suggestedMode;
               });
-              _resetTimer();
+              // don't reset timer, just update UI
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.amber,
@@ -410,8 +461,12 @@ class _ZenZonePageState extends State<ZenZonePage>
     return Colors.amber;
   }
 
+  int _sessionTotalSeconds = 0; // used for progress bar
+
   Widget _buildTimerDisplay() {
     final roomColor = _getRoomColor();
+    final minutes = _modeMinutes[_currentMode] ?? _defaultMinutes(_currentMode);
+    final seconds = _modeSeconds[_currentMode] ?? 0;
 
     return AnimatedBuilder(
       animation: _pulseAnimation,
@@ -443,11 +498,11 @@ class _ZenZonePageState extends State<ZenZonePage>
                     // Progress indicator
                     Positioned.fill(
                       child: CircularProgressIndicator(
-                        value: _isRunning
+                        value: _sessionTotalSeconds > 0
                             ? 1.0 -
-                                  ((_minutes * 60 + _seconds) /
-                                      _getTotalSeconds())
-                            : 0.0,
+                                  (_remainingTimeInSeconds /
+                                      _sessionTotalSeconds)
+                            : 1.0,
                         strokeWidth: 4,
                         backgroundColor: Colors.white.withValues(alpha: 0.1),
                         valueColor: AlwaysStoppedAnimation<Color>(roomColor),
@@ -459,7 +514,7 @@ class _ZenZonePageState extends State<ZenZonePage>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            '${_minutes.toString().padLeft(2, '0')}:${_seconds.toString().padLeft(2, '0')}',
+                            '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
                             style: TextStyle(
                               fontSize: 48,
                               fontWeight: FontWeight.w300,
@@ -489,23 +544,6 @@ class _ZenZonePageState extends State<ZenZonePage>
         );
       },
     );
-  }
-
-  int _getTotalSeconds() {
-    switch (_currentMode) {
-      case TimerMode.focus:
-        return 25 * 60;
-      case TimerMode.shortBreak:
-        return 5 * 60;
-      case TimerMode.longBreak:
-        return 15 * 60;
-    }
-  }
-
-  int _getTotalSessionsCompleted() {
-    return _focusSessionsCompleted +
-        _shortBreakSessionsCompleted +
-        _longBreakSessionsCompleted;
   }
 
   Widget _buildControlButtons() {
@@ -586,6 +624,143 @@ class _ZenZonePageState extends State<ZenZonePage>
     );
   }
 
+  Widget _buildSetTimerButton() {
+    final roomColor = _getRoomColor();
+    return Visibility(
+      visible: _canLeave ? true : false,
+      child: ElevatedButton.icon(
+        icon: Icon(Icons.timer, color: roomColor),
+        label: Text(
+          'Set Timer',
+          style: TextStyle(fontWeight: FontWeight.w600, color: roomColor),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF121212),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: roomColor),
+          ),
+        ),
+        onPressed: () async {
+          final result = await showDialog<Map<String, int>>(
+            context: context,
+            builder: (context) {
+              int _customMinutes =
+                  _modeMinutes[_currentMode] ?? _defaultMinutes(_currentMode);
+              int _customSeconds = _modeSeconds[_currentMode] ?? 0;
+              return AlertDialog(
+                backgroundColor: const Color(0xFF1E1E1E),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: Text(
+                  'Set Custom Timer',
+                  style: TextStyle(color: Colors.amber, fontFamily: 'Petrona'),
+                ),
+                content: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Minutes',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 40,
+                            child: TextFormField(
+                              initialValue: '$_customMinutes',
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(color: Colors.amber),
+                              decoration: InputDecoration(
+                                border: UnderlineInputBorder(),
+                                hintText: 'Minutes',
+                              ),
+                              onChanged: (val) {
+                                final numVal = int.tryParse(val) ?? 0;
+                                _customMinutes = numVal.clamp(0, 59);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Seconds',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 40,
+                            child: TextFormField(
+                              initialValue: '$_customSeconds',
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(color: Colors.amber),
+                              decoration: InputDecoration(
+                                border: UnderlineInputBorder(),
+                                hintText: 'Seconds',
+                              ),
+                              onChanged: (val) {
+                                final numVal = int.tryParse(val) ?? 0;
+                                _customSeconds = numVal.clamp(0, 59);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.amber),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop({
+                        'minutes': _customMinutes,
+                        'seconds': _customSeconds,
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.black,
+                    ),
+                    child: Text(
+                      'Set',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+          if (result != null) {
+            setState(() {
+              // Only update the current mode's timer
+              _modeMinutes[_currentMode] = result['minutes']!;
+              _modeSeconds[_currentMode] = result['seconds']!;
+            });
+          }
+        },
+      ),
+    );
+  }
+
   Widget _buildModeButton(Color roomColor) {
     return PopupMenuButton<TimerMode>(
       onSelected: (mode) {
@@ -593,17 +768,7 @@ class _ZenZonePageState extends State<ZenZonePage>
           setState(() {
             _currentMode = mode;
           });
-          _resetTimer();
-
-          if (_isPaused) {
-            _timer?.cancel();
-            _rotationController.stop();
-            _rotationController.reset();
-            setState(() {
-              _isRunning = false;
-              _isPaused = false;
-            });
-          }
+          // Do NOT reset timer here, preserve minutes/seconds per mode
         }
       },
       enabled: !_isRunning || _isPaused,
@@ -614,7 +779,7 @@ class _ZenZonePageState extends State<ZenZonePage>
             children: [
               Icon(Icons.psychology, color: Colors.amber, size: 20),
               const SizedBox(width: 8),
-              Text('Focus (25m)', style: TextStyle(color: Colors.white)),
+              Text('Focus', style: TextStyle(color: Colors.white)),
             ],
           ),
         ),
@@ -646,19 +811,19 @@ class _ZenZonePageState extends State<ZenZonePage>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: (!_isRunning || _isPaused)
-              ? roomColor.withOpacity(0.2)
-              : Colors.white.withOpacity(0.1),
+              ? roomColor.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.1),
           border: Border.all(
             color: (!_isRunning || _isPaused)
-                ? roomColor.withOpacity(0.5)
-                : Colors.white.withOpacity(0.2),
+                ? roomColor.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.2),
           ),
         ),
         child: Icon(
           _getModeIcon(_currentMode),
           color: (!_isRunning || _isPaused)
               ? roomColor
-              : Colors.white.withOpacity(0.3),
+              : Colors.white.withValues(alpha: 0.3),
           size: 20,
         ),
       ),
@@ -679,13 +844,7 @@ class _ZenZonePageState extends State<ZenZonePage>
   Widget _buildRoomHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.black.withValues(alpha: 0.3), Colors.transparent],
-        ),
-      ),
+      decoration: BoxDecoration(color: Colors.transparent),
       child: Row(
         children: [
           // Room image
@@ -766,7 +925,7 @@ class _ZenZonePageState extends State<ZenZonePage>
               border: Border.all(color: _getRoomColor().withValues(alpha: 0.3)),
             ),
             child: Text(
-              '${_getTotalSessionsCompleted()} sessions',
+              '${_totalSessions} sessions',
               style: TextStyle(
                 fontSize: 12,
                 color: _getRoomColor(),
@@ -779,25 +938,74 @@ class _ZenZonePageState extends State<ZenZonePage>
     );
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _pulseController.dispose();
-    _rotationController.dispose();
-    super.dispose();
+  Widget _buildStatCard(String title, String value, IconData icon) {
+    final roomColor = _getRoomColor();
+
+    return Container(
+      width: 100,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: roomColor.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: roomColor, size: 20),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              fontFamily: 'JBM',
+            ),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.6),
+              fontFamily: 'Petrona',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoomEndDrawer() {
+    return Drawer(
+      backgroundColor: const Color.fromRGBO(25, 25, 25, 1),
+      child: SafeArea(
+        child: ViewOnlyFileListView(
+          files: _roomFiles,
+          themeColor: _getRoomColor(),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: _canLeave
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : Padding(
+                padding: EdgeInsetsGeometry.only(left: 15),
+                child: Icon(Icons.timer, size: 30, color: _getRoomColor()),
+              ),
+
         title: Text(
           'Zen Zone',
           style: TextStyle(
@@ -807,10 +1015,16 @@ class _ZenZonePageState extends State<ZenZonePage>
           ),
         ),
         actions: [
+          Builder(
+            builder: (context) => IconButton(
+              icon: Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openEndDrawer(),
+            ),
+          ),
           IconButton(
             icon: Icon(
               Icons.info_outline,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
             ),
             onPressed: () {
               showDialog(
@@ -859,83 +1073,51 @@ class _ZenZonePageState extends State<ZenZonePage>
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildRoomHeader(),
-          const SizedBox(height: 40),
+      endDrawer: _buildRoomEndDrawer(),
+      body: Expanded(
+        child: Column(
+          children: [
+            _buildRoomHeader(),
+            const SizedBox(height: 40),
 
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildTimerDisplay(),
-                const SizedBox(height: 60),
-                _buildControlButtons(),
-              ],
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildTimerDisplay(),
+                  const SizedBox(height: 20),
+                  _buildSetTimerButton(),
+                  const SizedBox(height: 40),
+                  _buildControlButtons(),
+                ],
+              ),
             ),
-          ),
 
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatCard(
-                  'Total Focus',
-                  '${(_totalFocusTime / 60).floor()}m',
-                  Icons.timer,
-                ),
-                _buildStatCard(
-                  'Sessions',
-                  '${_getTotalSessionsCompleted()}',
-                  Icons.check_circle,
-                ),
-                _buildStatCard(
-                  'Breaks',
-                  '${(_totalShortBreakTime + _totalLongBreakTime) ~/ 60}m',
-                  Icons.coffee,
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatCard(
+                    'Total Focus',
+                    '${(_totalFocusTime / 60).floor()}m',
+                    Icons.timer,
+                  ),
+                  _buildStatCard(
+                    'Sessions',
+                    '${_totalSessions}',
+                    Icons.check_circle,
+                  ),
+                  _buildStatCard(
+                    'Breaks',
+                    '${((_totalShortBreakTime + _totalLongBreakTime) ~/ 60)}m',
+                    Icons.coffee,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon) {
-    final roomColor = _getRoomColor();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: roomColor.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: roomColor, size: 20),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              fontFamily: 'JBM',
-            ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.6),
-              fontFamily: 'Petrona',
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

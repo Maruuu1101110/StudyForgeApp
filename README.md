@@ -20,11 +20,21 @@ It is still in its early stages hence the lack of features but here are the feat
 
 - [x] User profile and progress tracking. 
 
-- [ ] PDF, PPT, DOCS, etc... file viewer. (comming real soon)
+- [x] PDF, PPT, DOCS, etc... file viewer. (PDF only for now, converts other files to pdf if not)
+
+- [x] Study Session / Study Page: A page dedicated for zen | study time.
+    - [x] Fle viewer
+    - [ ] Quiz Section
+    - [ ] Study/Zen Zone
+    - [ ] Progress Tracker
+
+- [x] Local AI (Ember AI: Study Budy).
 
 - [ ] Folder and File Manager system.
 
-- [ ] Study Session / Study Page: A page dedicated for zen | study time.<br />
+- [ ] Settings
+
+
 
 
 ...more comming soon
@@ -55,6 +65,19 @@ It is still in its early stages hence the lack of features but here are the feat
 - Context-aware navigation improvements
 - Bug fixes and performance optimizations
 
+## Patch 1.1.5: July 7, 2025 (BETA)
+- Redesigned Study Session UI/UX
+- Room Features for Study Session page
+- New AI assitant (study buddy)
+- PDF file viewer with floating window
+- Quick message widget for AI on Home Page
+
+## Patch 1.1.7: July 9, 2025 (BETA)
+- Improved AI page
+- Page for Settings
+- Quick Message widget for Home Page
+- WIP: Study Zone | Quizes and Practice | Progress Tracker
+
 
 <br />
 
@@ -65,6 +88,8 @@ It is still in its early stages hence the lack of features but here are the feat
 ## 🚀 Run the App
 
 > Note: This app currently supports **Android only**. iOS and desktop support is not available yet.
+
+> LLM can't work unless you provide your own API for it. You can add your personal API and other keys in the settings if you want to use the LLM inside.
 
 ### 📦 Prerequisites
 - Flutter installed (check [Flutter install guide](https://docs.flutter.dev/get-started/install))
