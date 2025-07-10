@@ -88,7 +88,7 @@ class ReminderManager {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'reminders',
-      orderBy: 'isPinned DESC ,dueDate ASC',
+      orderBy: 'isPinned DESC ,dueDate DESC',
     );
 
     return List.generate(maps.length, (i) => Reminder.fromMap(maps[i]));
