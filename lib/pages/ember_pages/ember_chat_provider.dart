@@ -451,6 +451,7 @@ class _EmberChatPageState extends State<EmberChatPage>
     super.build(context);
     final messages = Provider.of<ChatProvider>(context).messages;
     return GestureDetector(
+      behavior: HitTestBehavior.translucent,
       child: Scaffold(
         extendBody: true,
         backgroundColor: const Color.fromARGB(255, 15, 15, 15),
@@ -987,7 +988,7 @@ class _EmberChatPageState extends State<EmberChatPage>
     return SafeArea(
       bottom: true,
       child: Padding(
-        padding: EdgeInsetsGeometry.only(left: 4, right: 4),
+        padding: EdgeInsetsGeometry.only(left: 4, right: 4, bottom: 8),
         child: Container(
           padding: const EdgeInsets.all(0),
           decoration: BoxDecoration(
