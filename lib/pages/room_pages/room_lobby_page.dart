@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:study_forge/models/room_model.dart';
+import 'package:study_forge/pages/room_pages/quizRoomPage.dart';
+import 'package:study_forge/pages/room_pages/zenZonePage.dart';
 import 'package:study_forge/utils/file_manager_service.dart';
 import 'package:study_forge/utils/navigationObservers.dart';
 import 'package:study_forge/pages/room_pages/room_files_page.dart';
@@ -21,7 +23,6 @@ class _RoomLobbyPageState extends State<RoomLobbyPage>
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-
   List<FileSystemEntity> files = [];
 
   Map<String, dynamic>? roomMetadata;
@@ -648,13 +649,23 @@ class _RoomLobbyPageState extends State<RoomLobbyPage>
   }
 
   void _navigateToQuizzes() {
-    // TODO: Navigate to quizzes page
-    print('Navigate to Quizzes & Practice');
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => QuizRoomPage(room: widget.room),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
   }
 
   void _navigateToStudyZone() {
-    // TODO: Navigate to study zone
-    print('Navigate to Study Zone');
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => ZenZonePage(room: widget.room),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
   }
 
   void _navigateToProgress() {

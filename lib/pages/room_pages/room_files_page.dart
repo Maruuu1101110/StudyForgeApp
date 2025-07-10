@@ -3,7 +3,7 @@ import 'package:study_forge/models/room_model.dart';
 import 'package:study_forge/utils/file_manager_service.dart';
 import 'package:study_forge/utils/file_picker_service.dart';
 import 'package:study_forge/utils/conversion_queue_service.dart';
-import 'package:study_forge/utils/global_pdf_overlay_service.dart';
+import 'package:study_forge/utils/global_overlay_service.dart';
 import 'dart:io';
 
 class RoomFilesPage extends StatefulWidget {
@@ -393,7 +393,10 @@ class _RoomFilesPageState extends State<RoomFilesPage>
 
       if (aIsConverting && !bIsConverting) return -1;
       if (!aIsConverting && bIsConverting) return 1;
-      return 0;
+
+      final aModified = a.lastModifiedSync();
+      final bModified = b.lastModifiedSync();
+      return bModified.compareTo(aModified); // newest first
     });
 
     return ListView.builder(
@@ -514,6 +517,16 @@ class _RoomFilesPageState extends State<RoomFilesPage>
                           Icon(Icons.open_in_new, color: Colors.white70),
                           SizedBox(width: 8),
                           Text('Open', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'rename',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_document, color: Colors.white70),
+                          SizedBox(width: 8),
+                          Text('Rename', style: TextStyle(color: Colors.white)),
                         ],
                       ),
                     ),
@@ -684,7 +697,21 @@ class _RoomFilesPageState extends State<RoomFilesPage>
   void _handleFileAction(String action, File file) {
     switch (action) {
       case 'open':
-        _openFile(file);
+        openFile(file);
+        break;
+      case 'rename':
+        renameFile(
+          context,
+          file,
+          onRenamed: (updatedFile) {
+            setState(() {
+              final index = roomFiles.indexOf(file);
+              if (index != -1) {
+                roomFiles[index] = updatedFile;
+              }
+            });
+          },
+        );
         break;
       case 'delete':
         _deleteFile(file);
@@ -743,12 +770,22 @@ class _RoomFilesPageState extends State<RoomFilesPage>
     }
   }
 
-  void _openFile(File file) {
+  void openFile(File file) {
     final fileName = file.path.split('/').last;
     final fileExtension = fileName.split('.').last.toLowerCase();
 
     if (fileExtension == 'pdf') {
-      GlobalPdfOverlayService().openPdfViewer(file.path, context: context);
+      GlobalPdfOverlayService().openPdfViewer(
+        file.path,
+        context: context,
+        roomColor: _getRoomThemeColor(),
+      );
+    } else if (fileExtension == 'md') {
+      GlobalMdOverlayService().openMdViewer(
+        file.path,
+        context: context,
+        roomColor: _getRoomThemeColor(),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -756,6 +793,113 @@ class _RoomFilesPageState extends State<RoomFilesPage>
             'Cannot open $fileExtension files directly. Only PDFs can be viewed.',
           ),
           backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  void renameFile(
+    BuildContext context,
+    File file, {
+    void Function(File newFile)? onRenamed,
+  }) async {
+    final currentName = file.path.split('/').last;
+    final currentExtension = currentName.contains('.')
+        ? currentName.split('.').last
+        : '';
+    final baseName = currentName.replaceFirst(
+      RegExp(r'\.' + RegExp.escape(currentExtension) + r'$'),
+      '',
+    );
+    final dirPath = file.parent.path;
+
+    final TextEditingController controller = TextEditingController(
+      text: baseName,
+    );
+
+    final newBaseName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color.fromARGB(255, 57, 57, 57),
+        title: Text(
+          'Rename File',
+          style: TextStyle(color: _getRoomThemeColor(), fontFamily: "Petrona"),
+        ),
+        content: TextField(
+          cursorColor: _getRoomThemeColor(),
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: _getRoomThemeColor()),
+            ),
+            hintText: 'Enter new file name (without extension)',
+            hintStyle: const TextStyle(color: Colors.white38),
+            suffixText: currentExtension.isNotEmpty
+                ? '.$currentExtension'
+                : null,
+            suffixStyle: TextStyle(color: _getRoomThemeColor()),
+          ),
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: _getRoomThemeColor()),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 31, 31, 31),
+            ),
+            onPressed: () {
+              final input = controller.text.trim();
+              if (input.isNotEmpty) Navigator.of(context).pop(input);
+            },
+            child: Text(
+              'Rename',
+              style: TextStyle(color: _getRoomThemeColor()),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (newBaseName == null || newBaseName == baseName) return;
+
+    final newFilePath =
+        '$dirPath/$newBaseName'
+        '${currentExtension.isNotEmpty ? '.$currentExtension' : ''}';
+
+    if (File(newFilePath).existsSync()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('A file with that name already exists.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final renamedFile = await file.rename(newFilePath);
+      onRenamed?.call(renamedFile); // <--- this line adds auto-refresh hook
+
+      // ✅ Trigger UI update if needed — optional callback or use setState externally
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('File renamed successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Rename failed: $e'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -816,7 +960,177 @@ class _RoomFilesPageState extends State<RoomFilesPage>
     if (isConverting) {
       _showCancelConversionDialog(file);
     } else {
-      _openFile(file);
+      openFile(file);
     }
+  }
+}
+
+class ViewOnlyFileListView extends StatelessWidget {
+  final List<FileSystemEntity> files;
+  final Color themeColor;
+
+  const ViewOnlyFileListView({
+    super.key,
+    required this.files,
+    required this.themeColor,
+  });
+
+  void openFile(BuildContext context, File file) {
+    final fileName = file.path.split('/').last;
+    final fileExtension = fileName.split('.').last.toLowerCase();
+
+    if (fileExtension == 'pdf') {
+      GlobalPdfOverlayService().openPdfViewer(
+        file.path,
+        context: context,
+        roomColor: themeColor,
+      );
+    } else if (fileExtension == 'md') {
+      GlobalMdOverlayService().openMdViewer(
+        file.path,
+        context: context,
+        roomColor: themeColor,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Cannot open $fileExtension files directly. Only PDFs and MDs can be viewed.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _buildHeader(),
+        const Divider(color: Colors.white24, height: 1),
+        Expanded(
+          child: files.isEmpty
+              ? Center(
+                  child: Text(
+                    'No files available.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontFamily: 'Petrona',
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: files.length,
+                  itemBuilder: (context, index) {
+                    final file = files[index];
+                    final fileName = file.path.split('/').last;
+                    final extension = fileName.split('.').last.toLowerCase();
+                    final icon = _getFileIcon(extension);
+                    final fileSize = _formatFileSize(
+                      File(file.path).lengthSync(),
+                    );
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: themeColor.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        leading: Icon(icon, color: themeColor, size: 28),
+                        title: Text(
+                          fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Petrona',
+                          ),
+                        ),
+                        subtitle: Text(
+                          '$extension • $fileSize',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            fontSize: 12,
+                          ),
+                        ),
+                        onTap: () => openFile(context, File(file.path)),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Icon(Icons.folder_open, color: themeColor),
+          const SizedBox(width: 12),
+          Text(
+            'Room Files',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontFamily: 'Petrona',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getFileIcon(String extension) {
+    switch (extension) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'txt':
+        return Icons.text_snippet;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return Icons.image;
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+        return Icons.video_file;
+      case 'mp3':
+      case 'wav':
+      case 'aac':
+        return Icons.audio_file;
+      case 'zip':
+      case 'rar':
+      case '7z':
+        return Icons.archive;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }

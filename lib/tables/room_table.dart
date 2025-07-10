@@ -251,6 +251,27 @@ class RoomTableManager {
     }
   }
 
+  // for study session
+  Future<int> updateTotalSessions(int roomId, int newCount) async {
+    final db = await database;
+    return await db.update(
+      _tableName,
+      {'totalSessions': newCount},
+      where: 'id = ?',
+      whereArgs: [roomId],
+    );
+  }
+
+  Future<int> updateStudyTime(int roomId, int totalMinutes) async {
+    final db = await database;
+    return await db.update(
+      _tableName,
+      {'totalStudyTime': totalMinutes},
+      where: 'id = ?',
+      whereArgs: [roomId],
+    );
+  }
+
   // increment session count and add study time
   static Future<int> addSessionData(int roomId, int studyTimeMinutes) async {
     final db = await database;
