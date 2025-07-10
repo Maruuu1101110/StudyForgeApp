@@ -9,6 +9,7 @@ class FileManagerService {
   static const String _studyForgeFolderName = 'Study Forge';
   static const String _filesFolderName = 'Files';
   static const String _quizzesFolderName = 'Quizzes';
+  static const String _flashCardFolderName = 'FlashCards';
   static const String _progressFolderName = 'Progress';
   static const String _metadataFileName = 'metadata.json';
 
@@ -104,6 +105,7 @@ class FileManagerService {
     final subfolders = [
       _filesFolderName,
       _quizzesFolderName,
+      _flashCardFolderName,
       _progressFolderName,
     ];
 
@@ -221,6 +223,11 @@ class FileManagerService {
     return path.join(roomPath, _quizzesFolderName);
   }
 
+  Future<String> getFlashCardPath(int roomId) async {
+    final roomPath = await getRoomFolderPath(roomId);
+    return path.join(roomPath, _flashCardFolderName);
+  }
+
   Future<String> getProgressPath(int roomId) async {
     final roomPath = await getRoomFolderPath(roomId);
     return path.join(roomPath, _progressFolderName);
@@ -239,6 +246,42 @@ class FileManagerService {
     } catch (e) {
       if (kDebugMode) {
         print('Error getting room files: $e');
+      }
+      return [];
+    }
+  }
+
+  Future<List<FileSystemEntity>> getRoomQuizzes(int roomId) async {
+    try {
+      final quizzesPath = await getQuizzesPath(roomId);
+      final quizzesDir = Directory(quizzesPath);
+
+      if (!await quizzesDir.exists()) {
+        return [];
+      }
+
+      return await quizzesDir.list().toList();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting room quizzes: $e');
+      }
+      return [];
+    }
+  }
+
+  Future<List<FileSystemEntity>> getRoomFlashCards(int roomId) async {
+    try {
+      final flashCardPath = await getFlashCardPath(roomId);
+      final flashCardDir = Directory(flashCardPath);
+
+      if (!await flashCardDir.exists()) {
+        return [];
+      }
+
+      return await flashCardDir.list().toList();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting room flash cards: $e');
       }
       return [];
     }
@@ -283,5 +326,61 @@ class FileManagerService {
     await incrementFileCount(int.parse(roomId));
 
     return copiedFile;
+  }
+
+  Future<String> getStudyForgeBasePath() async {
+    return _studyForgeBasePath;
+  }
+
+  Future<List<Map<String, dynamic>>> getAllRoomsMetadata() async {
+    final basePath = await _studyForgeBasePath;
+    final baseDir = Directory(basePath);
+    final List<Map<String, dynamic>> roomList = [];
+
+    if (!await baseDir.exists()) return [];
+
+    final roomDirs = baseDir.listSync().whereType<Directory>();
+    for (final dir in roomDirs) {
+      final metadataFile = File(path.join(dir.path, _metadataFileName));
+      if (await metadataFile.exists()) {
+        try {
+          final content = await metadataFile.readAsString();
+          final data = jsonDecode(content);
+          if (data is Map<String, dynamic>) {
+            roomList.add(data);
+          }
+        } catch (e) {
+          if (kDebugMode) print('Failed to read metadata in ${dir.path}: $e');
+        }
+      }
+    }
+
+    return roomList;
+  }
+
+  Future<int?> getRoomIdFromSubject(String subject) async {
+    final rooms = await getAllRoomsMetadata();
+    for (final room in rooms) {
+      if ((room['subject'] as String).toLowerCase().trim() ==
+          subject.toLowerCase().trim()) {
+        return room['roomId'];
+      }
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> getRoomMetadataFromPath(String roomPath) async {
+    try {
+      final metadataFile = File(path.join(roomPath, _metadataFileName));
+      if (!await metadataFile.exists()) return null;
+
+      final content = await metadataFile.readAsString();
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error reading metadata from path $roomPath: $e');
+      }
+      return null;
+    }
   }
 }
