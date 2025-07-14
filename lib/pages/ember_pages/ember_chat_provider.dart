@@ -6,6 +6,9 @@ import 'package:study_forge/utils/pdf_extractor_service.dart';
 import 'package:study_forge/components/sideBar.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 
+// settings
+import 'package:study_forge/pages/settingsPage.dart';
+
 import 'package:study_forge/utils/code_wrapper.dart';
 import 'chat_provider.dart';
 
@@ -47,6 +50,8 @@ class _EmberChatPageState extends State<EmberChatPage>
   @override
   void initState() {
     super.initState();
+
+    _initializeEmberService();
 
     // initialize animations
     _fadeController = AnimationController(
@@ -96,6 +101,18 @@ class _EmberChatPageState extends State<EmberChatPage>
         sendMessage(prefilledText: widget.quickMessage);
       }
     });
+
+    _scrollToBottom();
+  }
+
+  Future<void> _initializeEmberService() async {
+    try {
+      await EmberAIService().init(); // load db-stored API values here
+      debugPrint("✅ Ember AI Service Initialized");
+    } catch (e) {
+      debugPrint("❌ Ember init error: $e");
+      // Optional: show a dialog/snackbar that says "Check Ember API config"
+    }
   }
 
   @override
@@ -131,8 +148,7 @@ class _EmberChatPageState extends State<EmberChatPage>
   }
 
   List<Map<String, String>> _buildSessionContext(List<ChatMessage> messages) {
-    const int maxTurns =
-        10; // 5 from ai, 5 from me = 10 total || 5 total exchanges
+    final maxTurns = EmberMemoryController.instance.shortTermLimit;
 
     final filtered = messages
         .where((m) => m.status == MessageStatus.sent)
@@ -253,7 +269,7 @@ class _EmberChatPageState extends State<EmberChatPage>
               chatProvider.replaceMessage(
                 index,
                 messages[index].copyWith(
-                  text: "Sorry, something went wrong. 😔\nTap to retry.",
+                  text: "Sorry, something went wrong. 😔.",
                   status: MessageStatus.failed,
                 ),
               );
