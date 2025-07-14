@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+
 // database
 import 'package:study_forge/models/note_model.dart';
 import 'package:study_forge/models/reminder_model.dart';
@@ -45,9 +47,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  Set<String> selectedNotes = {};
-  List<Note> searchResults = [];
-
+  // ember chat stuff
   bool _isTextValid = false;
 
   // user profile stuff for gamification bs
@@ -62,6 +62,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
     _checkFirstRun();
     loadPendingReminders();
     loadUserProfile();
+    loadNotes();
 
     _controllerHome.addListener(_handleTextChanged);
 
@@ -386,15 +387,23 @@ class _ForgeHomeState extends State<ForgeHomePage>
           // quick action buttons grid
           _buildQuickActionsGrid(),
 
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
+
+          // reminder preview
+          _buildUpcomingRemindersSection(pendingReminders),
+
+          const SizedBox(height: 40),
 
           // user stats cards
           _buildStatsCards(),
 
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
 
-          // recent activity and achievements section
-          _buildRecentActivity(),
+          // achievements section
+          if (userProfile != null && userProfile!.badges.isNotEmpty) ...[
+            _buildBadgesSection(),
+            const SizedBox(height: 40),
+          ],
 
           const SizedBox(height: 40),
         ],
@@ -886,68 +895,83 @@ class _ForgeHomeState extends State<ForgeHomePage>
     );
   }
 
-  Widget _buildRecentActivity() {
+  Widget _buildReminderPreview(List<Reminder> reminders) {
+    if (reminders.isEmpty) {
+      return const Text(
+        "No reminders in the next 2 days.",
+        style: TextStyle(color: Colors.white54),
+      );
+    }
+
     return Column(
-      children: [
-        // show achievements if user has badges
-        if (userProfile != null && userProfile!.badges.isNotEmpty) ...[
-          _buildBadgesSection(),
-          const SizedBox(height: 30),
-        ],
-        // always show recent activity section
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Recent Activity',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w300,
-                  color: ForgeColors.amber100,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: ForgeColors.black.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: ForgeColors.white.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    _buildActivityItem(
-                      'Welcome to Study Forge!',
-                      'Start creating notes and reminders',
-                      Icons.celebration,
-                      ForgeColors.amber,
-                    ),
-                    _buildDivider(),
-                    _buildActivityItem(
-                      'Complete your first study session',
-                      'Tap "Study Session" to begin',
-                      Icons.psychology,
-                      ForgeColors.orange,
-                    ),
-                    _buildDivider(),
-                    _buildActivityItem(
-                      'Create your first note',
-                      'Tap "New Note" to start',
-                      Icons.note_add,
-                      ForgeColors.deepOrange,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      children: reminders.map((reminder) {
+        final time = DateFormat('hh:mm a').format(reminder.dueDate);
+        final isToday = DateTime.now().day == reminder.dueDate.day;
+
+        return ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+          leading: Icon(
+            Icons.access_time,
+            color: isToday ? ForgeColors.amber : ForgeColors.orange,
           ),
-        ),
-      ],
+          title: Text(
+            reminder.title,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
+          ),
+          subtitle: Text(
+            "${isToday ? 'Today' : 'Tomorrow'} · $time",
+            style: const TextStyle(color: Colors.white70),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  List<Reminder> _filterUpcomingReminders(List<Reminder> allReminders) {
+    final now = DateTime.now();
+    final tomorrow = now.add(Duration(days: 1));
+    final end = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59);
+
+    return allReminders.where((reminder) {
+      final time = reminder.dueDate;
+      return time.isAfter(now) && time.isBefore(end);
+    }).toList()..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+  }
+
+  Widget _buildUpcomingRemindersSection(List<Reminder> allReminders) {
+    final upcoming = _filterUpcomingReminders(allReminders);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Upcoming Reminders',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w300,
+              color: ForgeColors.amber100,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(8),
+            alignment: Alignment.centerLeft,
+            decoration: BoxDecoration(
+              color: ForgeColors.black.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: ForgeColors.white.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            child: _buildReminderPreview(upcoming),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1011,61 +1035,6 @@ class _ForgeHomeState extends State<ForgeHomePage>
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildActivityItem(
-    String title,
-    String time,
-    IconData icon,
-    Color color,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: ForgeColors.white.withValues(alpha: 0.9),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: TextStyle(
-                    color: ForgeColors.white.withValues(alpha: 0.6),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      height: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      color: ForgeColors.white.withValues(alpha: 0.1),
     );
   }
 

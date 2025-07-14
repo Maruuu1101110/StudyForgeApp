@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:study_forge/models/room_model.dart';
 import 'package:study_forge/pages/room_pages/quizRoomPage.dart';
@@ -24,6 +23,8 @@ class _RoomLobbyPageState extends State<RoomLobbyPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   List<FileSystemEntity> files = [];
+  List<FileSystemEntity> quizSets = [];
+  List<FileSystemEntity> flashCards = [];
 
   Map<String, dynamic>? roomMetadata;
   bool isLoading = true;
@@ -85,8 +86,16 @@ class _RoomLobbyPageState extends State<RoomLobbyPage>
       final files = await FileManagerService.instance.getRoomFiles(
         widget.room.id!,
       );
+      final quizSets = await FileManagerService.instance.getRoomQuizzes(
+        widget.room.id!,
+      );
+      final flashCards = await FileManagerService.instance.getRoomFlashCards(
+        widget.room.id!,
+      );
       setState(() {
         this.files = files;
+        this.quizSets = quizSets;
+        this.flashCards = flashCards;
         roomMetadata = metadata;
         isLoading = false;
       });
@@ -342,7 +351,7 @@ class _RoomLobbyPageState extends State<RoomLobbyPage>
                 child: _buildActionCard(
                   icon: Icons.quiz_outlined,
                   title: 'Quizzes & Practice',
-                  subtitle: '${roomMetadata?['quizCount'] ?? 0} quizzes',
+                  subtitle: '${quizSets.length + flashCards.length} quizzes',
                   gradient: [
                     const Color.fromARGB(
                       255,
@@ -538,7 +547,7 @@ class _RoomLobbyPageState extends State<RoomLobbyPage>
                 Expanded(
                   child: _buildStatCard(
                     'Quizzes Created',
-                    '${roomMetadata!['quizCount'] ?? 0}',
+                    '${quizSets.length + flashCards.length}',
                     Icons.quiz_outlined,
                     themeColor,
                     subtitle: 'Practice available',
@@ -669,7 +678,30 @@ class _RoomLobbyPageState extends State<RoomLobbyPage>
   }
 
   void _navigateToProgress() {
-    // TODO: Navigate to progress page
-    print('Navigate to Progress');
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color.fromARGB(
+          255,
+          37,
+          37,
+          37,
+        ).withValues(alpha: 0.8),
+        title: Text('🚧 Under Construction'),
+        content: Text(
+          'The Progress Page is currently under development. Check back soon!',
+        ),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.amber,
+              textStyle: const TextStyle(fontSize: 16),
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 }

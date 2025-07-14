@@ -16,11 +16,20 @@ class FlashCardContainer extends StatefulWidget {
 
 class _FlashCardContainerState extends State<FlashCardContainer> {
   late int _currentIndex;
+  late List<Widget> _shuffledFlashcards;
 
   @override
   void initState() {
     super.initState();
+    _shuffledFlashcards = List<Widget>.from(widget.flashCards);
     _currentIndex = widget.initialIndex.clamp(0, widget.flashCards.length - 1);
+  }
+
+  void _shuffleCards() {
+    setState(() {
+      _shuffledFlashcards.shuffle();
+      _currentIndex = 0;
+    });
   }
 
   void _goToPrev() {
@@ -38,7 +47,7 @@ class _FlashCardContainerState extends State<FlashCardContainer> {
   @override
   Widget build(BuildContext context) {
     final isFirst = _currentIndex == 0;
-    final isLast = _currentIndex == widget.flashCards.length - 1;
+    final isLast = _currentIndex == _shuffledFlashcards.length - 1;
     final themeColor = Theme.of(context).colorScheme.secondary;
 
     return Column(
@@ -47,12 +56,15 @@ class _FlashCardContainerState extends State<FlashCardContainer> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: themeColor.withOpacity(0.2), width: 2),
+            border: Border.all(
+              color: themeColor.withValues(alpha: 0.2),
+              width: 2,
+            ),
             boxShadow: [
               BoxShadow(
-                color: themeColor.withOpacity(0.08),
+                color: themeColor.withValues(alpha: 0.08),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -73,8 +85,10 @@ class _FlashCardContainerState extends State<FlashCardContainer> {
                     transitionBuilder: (child, animation) =>
                         FadeTransition(opacity: animation, child: child),
                     child: KeyedSubtree(
-                      key: ValueKey(_currentIndex),
-                      child: widget.flashCards[_currentIndex],
+                      key: ValueKey(
+                        _shuffledFlashcards[_currentIndex].hashCode,
+                      ),
+                      child: _shuffledFlashcards[_currentIndex],
                     ),
                   ),
           ),
@@ -103,6 +117,12 @@ class _FlashCardContainerState extends State<FlashCardContainer> {
                     fontSize: 16,
                   ),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.shuffle, size: 26),
+                color: themeColor,
+                onPressed: _shuffleCards,
+                tooltip: 'Shuffle',
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right, size: 32),

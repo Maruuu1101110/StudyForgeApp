@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 //import 'package:study_forge/pages/ember_pages/ember_messaging_panel.dart';
 import 'package:study_forge/pages/ember_pages/ember_chat_provider.dart';
 
@@ -62,9 +63,51 @@ class ForgeDrawer extends StatelessWidget {
                 ),
             tooltip: "New Note",
           ),
+          const SizedBox(height: 10),
+          _SidebarIcon(
+            icon: Icons.note_alt_outlined,
+            onPressed:
+                onNewNote ??
+                () => Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) =>
+                        MarkDownEditPage(noteManager: noteManager, isMD: true),
+                    transitionsBuilder: (_, animation, __, child) =>
+                        FadeTransition(opacity: animation, child: child),
+                  ),
+                ),
+            tooltip: "New MD Note",
+          ),
+          const SizedBox(height: 10),
           _SidebarIcon(
             icon: Icons.folder_outlined,
-            onPressed: onBrowseFiles ?? () {},
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: const Color.fromARGB(
+                    255,
+                    37,
+                    37,
+                    37,
+                  ).withValues(alpha: 0.8),
+                  title: Text('🚧 Under Construction'),
+                  content: Text(
+                    'The Folder Manager Page is currently under development. Check back soon!',
+                  ),
+                  actions: [
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.amber,
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
             tooltip: "Browse Files",
           ),
           const Divider(color: Colors.white24, indent: 10, endIndent: 10),
@@ -73,6 +116,7 @@ class ForgeDrawer extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _SidebarIcon(
                     icon: Icons.home,
@@ -91,6 +135,7 @@ class ForgeDrawer extends StatelessWidget {
                           ),
                         ),
                   ),
+                  const SizedBox(height: 10),
                   _SidebarIcon(
                     icon: Icons.notes,
                     tooltip: "Notes",
@@ -110,6 +155,7 @@ class ForgeDrawer extends StatelessWidget {
                           ),
                         ),
                   ),
+                  const SizedBox(height: 10),
                   _SidebarIcon(
                     icon: Icons.calendar_month,
                     tooltip: "Reminders",
@@ -129,6 +175,7 @@ class ForgeDrawer extends StatelessWidget {
                           ),
                         ),
                   ),
+                  const SizedBox(height: 10),
                   _SidebarIcon(
                     icon: Icons.school_outlined,
                     tooltip: "Study Sessions",
@@ -148,6 +195,7 @@ class ForgeDrawer extends StatelessWidget {
                           ),
                         ),
                   ),
+                  const SizedBox(height: 10),
                   //for (int i = 0; i < 10; i++) // Debug: Ember spam
                   _SidebarIcon(
                     icon: Icons.chat_bubble_outline,

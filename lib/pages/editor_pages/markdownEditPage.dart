@@ -45,9 +45,9 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
     super.initState();
     _titleController.text = widget.title ?? '';
     _contentController.text = widget.content ?? '';
-
     _titleController.addListener(_updateSaveButtonState);
     _contentController.addListener(_updateSaveButtonState);
+    isOnRead = widget.id != null;
   }
 
   void _updateSaveButtonState() {
@@ -87,7 +87,6 @@ class _MarkDownEditPageState extends State<MarkDownEditPage> {
     return await showDialog<String>(
       context: context,
       builder: (context) {
-        final theme = Theme.of(context);
         return AlertDialog(
           backgroundColor: const Color(0xFF1E1E1E),
           title: Row(

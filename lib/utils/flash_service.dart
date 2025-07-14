@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'file_manager_service.dart';
-import 'package:study_forge/pages/room_pages/quizMaterials/flashCards.dart';
+import 'package:study_forge/pages/room_pages/flashCardMaterials/flashCards.dart';
 
 class FlashcardService {
   static Future<void> saveFlashcardSet({

@@ -117,16 +117,33 @@ class FloatingSpeedDial extends StatelessWidget {
             labelShadow: [],
             child: const Icon(Icons.folder_open, color: Colors.amber),
             label: 'Open Folder',
-            onTap: () => print('Open Folder tapped'),
-          ),
-
-          SpeedDialChild(
-            child: const Icon(Icons.search, color: Colors.amber),
-            label: 'Search',
-            labelBackgroundColor: Colors.transparent,
-            labelShadow: [],
-            backgroundColor: const Color.fromRGBO(30, 30, 30, 1),
-            onTap: () => print("Pressed Search"),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: const Color.fromARGB(
+                    255,
+                    37,
+                    37,
+                    37,
+                  ).withValues(alpha: 0.8),
+                  title: Text('🚧 Under Construction'),
+                  content: Text(
+                    'The Folder Manager Page is currently under development. Check back soon!',
+                  ),
+                  actions: [
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.amber,
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

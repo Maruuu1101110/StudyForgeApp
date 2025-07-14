@@ -25,7 +25,6 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
     with SingleTickerProviderStateMixin {
   bool _isFlipped = false;
   late AnimationController _controller;
-  late Animation<double> _flipAnim;
 
   @override
   void initState() {
@@ -34,7 +33,6 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _flipAnim = Tween<double>(begin: 0, end: 1).animate(_controller);
   }
 
   void _toggleFlip() {

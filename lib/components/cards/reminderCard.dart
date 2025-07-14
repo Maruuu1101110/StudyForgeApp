@@ -116,6 +116,7 @@ class ReminderCard extends StatelessWidget {
                             await ReminderManager().markAsCompleted(
                               reminder.id,
                               true,
+                              context,
                             );
                             onRefresh?.call();
                           },

@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'package:study_forge/models/user_profile_model.dart';
+import 'package:study_forge/tables/db_helper.dart';
 
 class UserProfileManager {
   static Database? _database;
@@ -48,13 +49,15 @@ class UserProfileManager {
 
   // ensure user profile table exists
   Future<void> ensureUserProfileTableExists() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.execute(createUserProfileTableSQL);
   }
 
   // get or create user profile since theres only one
   Future<UserProfile> getUserProfile() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final maps = await db.query('user_profiles', limit: 1);
 
     if (maps.isNotEmpty) {
@@ -84,13 +87,15 @@ class UserProfileManager {
 
   // create new user profile
   Future<void> createUserProfile(UserProfile profile) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.insert('user_profiles', profile.toMap());
   }
 
   // update existing user profile
   Future<void> updateUserProfile(UserProfile profile) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.update(
       'user_profiles',
       profile.copyWith(updatedAt: DateTime.now()).toMap(),
@@ -128,7 +133,15 @@ class UserProfileManager {
     return updatedProfile;
   }
 
-  // update study streak logic
+  Future<UserProfile> updateTotalSessions(int sessions) async {
+    final profile = await getUserProfile();
+    final updatedProfile = profile.copyWith(totalStudySessions: sessions);
+
+    await updateUserProfile(updatedProfile);
+    return updatedProfile;
+  }
+
+  // update study streak and last study date
   Future<UserProfile> updateStudyStreak() async {
     final profile = await getUserProfile();
     final now = DateTime.now();
@@ -138,25 +151,19 @@ class UserProfileManager {
     int newStreak = profile.studyStreak;
 
     if (daysDifference == 0) {
-      // Already studied today, just update session count
-      final updatedProfile = profile.copyWith(
-        totalStudySessions: profile.totalStudySessions + 1,
-        lastStudyDate: now, // Optional, or keep as lastStudy
-      );
-      await updateUserProfile(updatedProfile);
-      return updatedProfile;
+      // Already studied today – no change needed
+      return profile;
     } else if (daysDifference == 1) {
-      // Next day, continue streak
-      newStreak = (profile.studyStreak == 0) ? 1 : profile.studyStreak + 1;
+      // Consecutive day: continue streak
+      newStreak = (newStreak == 0) ? 1 : newStreak + 1;
     } else {
-      // Missed a day, reset streak
+      // Missed at least 1 day: reset streak
       newStreak = 1;
     }
 
     final updatedProfile = profile.copyWith(
       studyStreak: newStreak,
       lastStudyDate: now,
-      totalStudySessions: profile.totalStudySessions + 1,
     );
 
     await updateUserProfile(updatedProfile);
@@ -209,6 +216,10 @@ class UserProfileManager {
     final profile = await getUserProfile();
 
     // streak badges for consistency freaks
+    if (profile.studyStreak >= 3 &&
+        !profile.badges.contains('Streak Starter')) {
+      return await awardBadge('Streak Starter');
+    }
     if (profile.studyStreak >= 7 && !profile.badges.contains('Week Warrior')) {
       return await awardBadge('Week Warrior');
     }
@@ -247,7 +258,8 @@ class UserProfileManager {
 
   // nuke all data for testing purposes
   Future<void> clearUserProfile() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.delete('user_profiles');
   }
 }

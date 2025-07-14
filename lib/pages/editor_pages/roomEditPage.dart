@@ -182,9 +182,6 @@ class _RoomEditPageState extends State<RoomEditPage> {
     return TextField(
       controller: controller,
       decoration: _inputDecoration(label),
-      onChanged: (value) => setState(() {
-        controller.text = value;
-      }),
     );
   }
 
