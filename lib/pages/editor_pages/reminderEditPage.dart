@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import 'package:study_forge/tables/reminder_table.dart';
 import 'package:study_forge/models/reminder_model.dart';
 import 'package:study_forge/utils/notification_service.dart';
+import 'package:study_forge/tables/user_profile_table.dart';
 
 class ReminderEditPage extends StatefulWidget {
   final ReminderManager reminderManager;
@@ -166,6 +167,7 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
         await widget.reminderManager.updateReminder(newReminder);
       } else {
         await widget.reminderManager.addReminder(newReminder);
+        await UserProfileManager().addExperiencePoints(15);
       }
     } catch (e) {
       debugPrint("Error saving reminder: $e");
@@ -188,8 +190,8 @@ class _ReminderEditPageState extends State<ReminderEditPage> {
         await NotificationService.scheduleNotification(
           id: getNotificationIdFromReminder, // use the new notification ID ALWAYS
           title: _titleController.text.isNotEmpty
-              ? "⏰️Reminder: ${_titleController.text} | Due in $_selectedLeadTimeKey"
-              : "⏰️ Reminder",
+              ? "Reminder: ${_titleController.text}"
+              : "⏰️Reminder",
           body: _descriptionController.text.isNotEmpty
               ? _descriptionController.text
               : "⚠️ You have a reminder due in $_selectedLeadTimeKey.",
