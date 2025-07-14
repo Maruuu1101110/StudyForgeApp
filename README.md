@@ -24,15 +24,16 @@ It is still in its early stages hence the lack of features but here are the feat
 
 - [x] Study Session / Study Page: A page dedicated for zen | study time.
     - [x] Fle viewer
-    - [ ] Quiz Section
-    - [ ] Study/Zen Zone
+    - [x] Quiz Section
+    - [x] Study/Zen Zone
     - [ ] Progress Tracker
 
 - [x] Local AI (Ember AI: Study Budy).
 
 - [ ] Folder and File Manager system.
 
-- [ ] Settings
+- [x] Settings
+  
 
 
 
@@ -77,6 +78,12 @@ It is still in its early stages hence the lack of features but here are the feat
 - Page for Settings
 - Quick Message widget for Home Page
 - WIP: Study Zone | Quizes and Practice | Progress Tracker
+
+## Patch 1.2.0: July 14, 2025 (BETA)
+- Polished UI and UX
+- Added API and URL keys for Study Buddy
+- Finished Implementing Quizzes and Flashcards
+- Added the Zen Zone page for study sessions
 
 
 <br />
