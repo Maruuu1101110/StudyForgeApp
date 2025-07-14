@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:study_forge/components/sideBar.dart';
 import 'package:study_forge/themes/forge_colors.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'dart:async';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -10,9 +15,21 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _isDarkMode = false;
-  bool _limitMemoryPersistence = true;
-  double _pdfTokenLimit = 1000; // future-proof slider for PDF memory limits
+  String _appVersion = "";
+  bool _limitMemoryPersistence = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = 'v${info.version}';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,12 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ).createShader(bounds),
           child: const Text(
             "Settings",
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              letterSpacing: 1.2,
-            ),
+            style: TextStyle(fontSize: 26, letterSpacing: 1.2),
           ),
         ),
         titleSpacing: 0,
@@ -62,7 +74,7 @@ class _SettingsPageState extends State<SettingsPage> {
           color: ForgeColors.black40,
           boxShadow: [
             BoxShadow(
-              color: ForgeColors.black.withOpacity(0.08),
+              color: ForgeColors.black.withValues(alpha: 0.08),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -72,62 +84,13 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: ListView(
           children: [
-            _buildSectionTitle("General"),
-            SwitchListTile(
-              title: Text("Dark Mode", style: ForgeTextStyles.tileTitle),
-              subtitle: Text(
-                "Switch between light and dark themes",
-                style: ForgeTextStyles.tileSubtitle,
-              ),
-              value: _isDarkMode,
-              activeColor: ForgeColors.amber300,
-              onChanged: (value) {
-                setState(() {
-                  _isDarkMode = value;
-                });
-                // TODO: Apply theme across app
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.language, color: ForgeColors.amber),
-              title: Text("Language", style: ForgeTextStyles.tileTitle),
-              subtitle: Text(
-                "English (US)",
-                style: ForgeTextStyles.tileSubtitle,
-              ),
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                color: ForgeColors.amber100,
-                size: 18,
-              ),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: Icon(
-                Icons.notifications_active_outlined,
-                color: ForgeColors.amber,
-              ),
-              title: Text("Notifications", style: ForgeTextStyles.tileTitle),
-              subtitle: Text(
-                "Push, Email",
-                style: ForgeTextStyles.tileSubtitle,
-              ),
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                color: ForgeColors.amber100,
-                size: 18,
-              ),
-              onTap: () {},
-            ),
-            const Divider(),
             _buildSectionTitle("Memory"),
             SwitchListTile(
-              title: Text(
-                "Limit AI Memory Persistence",
-                style: ForgeTextStyles.tileTitle,
-              ),
+              title: Text("Cram Mode", style: ForgeTextStyles.tileTitle),
               subtitle: Text(
-                "Resets memory context after each chat.",
+                "Temporarily expands Ember’s short-term memory from 5 to 15 sets.\n"
+                "Best for long review sessions.\n"
+                "⚠️ May affect performance — use only when needed.",
                 style: ForgeTextStyles.tileSubtitle,
               ),
               value: _limitMemoryPersistence,
@@ -136,70 +99,29 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _limitMemoryPersistence = value;
                 });
-                // TODO: Hook this into Ember's memory handler
+
+                // 🔧 Hook into Ember's memory handler here
+                EmberMemoryController.instance.updateShortTermLimit(
+                  value ? 15 : 5,
+                );
               },
             ),
-            if (_limitMemoryPersistence) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    Text(
-                      "PDF Token Limit:",
-                      style: ForgeTextStyles.tileSubtitle,
-                    ),
-                    Expanded(
-                      child: Slider(
-                        value: _pdfTokenLimit,
-                        min: 500,
-                        max: 4000,
-                        divisions: 7,
-                        label: _pdfTokenLimit.round().toString(),
-                        activeColor: ForgeColors.amber300,
-                        onChanged: (value) {
-                          setState(() {
-                            _pdfTokenLimit = value;
-                          });
-                          // TODO: Use this to cap token extraction
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+
             ListTile(
               leading: Icon(Icons.memory, color: ForgeColors.amber),
               title: Text("AI Model", style: ForgeTextStyles.tileTitle),
               subtitle: Text("Ember 3.3", style: ForgeTextStyles.tileSubtitle),
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                color: ForgeColors.amber100,
-                size: 18,
-              ),
               onTap: () {},
             ),
-            ListTile(
-              leading: Icon(Icons.security, color: ForgeColors.amber),
-              title: Text("Privacy Settings", style: ForgeTextStyles.tileTitle),
-              subtitle: Text(
-                "Manage data & permissions",
-                style: ForgeTextStyles.tileSubtitle,
-              ),
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                color: ForgeColors.amber100,
-                size: 18,
-              ),
-              onTap: () {},
-            ),
+            const Divider(),
+            EmberAPISettingsTile(),
             const Divider(),
             _buildSectionTitle("About"),
             ListTile(
               leading: Icon(Icons.info_outline, color: ForgeColors.amber),
               title: Text("App Version", style: ForgeTextStyles.tileTitle),
               subtitle: Text(
-                "StudyForge v1.1.5+15",
+                _appVersion.isEmpty ? "Loading..." : _appVersion,
                 style: ForgeTextStyles.tileSubtitle,
               ),
               trailing: Icon(
@@ -207,10 +129,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 color: ForgeColors.amber100,
                 size: 18,
               ),
-              onTap: () {
-                // TODO: Open about dialog or credits
-              },
+              onTap: () {},
             ),
+
             ListTile(
               leading: Icon(Icons.help_outline, color: ForgeColors.amber),
               title: Text("Help & Support", style: ForgeTextStyles.tileTitle),
@@ -218,12 +139,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 "FAQ, Contact, Feedback",
                 style: ForgeTextStyles.tileSubtitle,
               ),
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                color: ForgeColors.amber100,
-                size: 18,
-              ),
-              onTap: () {},
+              onTap: () {
+                SettingsManager().logEntireDatabase();
+              },
             ),
           ],
         ),
@@ -258,4 +176,208 @@ class ForgeTextStyles {
     fontWeight: FontWeight.w400,
     color: Colors.white,
   );
+}
+
+class EmberMemoryController {
+  static final instance = EmberMemoryController._();
+  EmberMemoryController._();
+
+  int shortTermLimit = 5;
+
+  void updateShortTermLimit(int value) {
+    shortTermLimit = value;
+    debugPrint("Ember's short-term memory limit set to $value sets");
+  }
+}
+
+class SettingsManager {
+  static final SettingsManager _instance = SettingsManager._internal();
+  factory SettingsManager() => _instance;
+  SettingsManager._internal();
+
+  static Database? _db;
+
+  static const String createSettingsTableSQL = '''
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+  ''';
+
+  Future<Database> get database async {
+    if (_db != null) return _db!;
+    return await _initDb();
+  }
+
+  Future<Database> _initDb() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final path = join(dir.path, 'studyforge.db');
+    final db = await openDatabase(path, version: 1);
+    await db.execute(createSettingsTableSQL);
+    _db = db;
+    return db;
+  }
+
+  Future<void> setSetting(String key, String value) async {
+    final db = await database;
+    await db.insert('app_settings', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<String?> getSetting(String key) async {
+    final db = await database;
+    final result = await db.query(
+      'app_settings',
+      where: 'key = ?',
+      whereArgs: [key],
+    );
+    if (result.isNotEmpty) {
+      return result.first['value'] as String;
+    }
+    return null;
+  }
+
+  Future<void> logEntireDatabase() async {
+    final db = await database;
+
+    // Get all table names
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
+    );
+
+    for (final table in tables) {
+      final tableName = table['name'];
+      debugPrint('📁 Table: $tableName');
+
+      final rows = await db.query(tableName.toString());
+      if (rows.isEmpty) {
+        debugPrint('   ↪ (empty)');
+      } else {
+        for (var row in rows) {
+          debugPrint('   🔹 $row');
+        }
+      }
+    }
+  }
+
+  Future<void> debugPrintAllSettings() async {
+    final db = await database;
+    final result = await db.query('app_settings');
+
+    if (result.isEmpty) {
+      debugPrint('⚠️ No settings found in app_settings.');
+    } else {
+      debugPrint('📋 Current Settings in app_settings:');
+      for (final row in result) {
+        debugPrint('• ${row['key']} => ${row['value']}');
+      }
+    }
+  }
+}
+
+class EmberAPISettingsTile extends StatefulWidget {
+  @override
+  _EmberAPISettingsTileState createState() => _EmberAPISettingsTileState();
+}
+
+class _EmberAPISettingsTileState extends State<EmberAPISettingsTile> {
+  bool _showFields = false;
+  final _apiKeyController = TextEditingController();
+  final _apiUrlController = TextEditingController();
+
+  static const _apiKeyKey = 'ember_api_key';
+  static const _apiUrlKey = 'ember_api_url';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedValues();
+  }
+
+  Future<void> _loadSavedValues() async {
+    final apiKey = await SettingsManager().getSetting(_apiKeyKey);
+    final apiUrl = await SettingsManager().getSetting(_apiUrlKey);
+    setState(() {
+      _apiKeyController.text = apiKey ?? '';
+      _apiUrlController.text = apiUrl ?? '';
+    });
+  }
+
+  void _toggleFields() {
+    setState(() => _showFields = !_showFields);
+  }
+
+  Future<void> _saveSettings() async {
+    final apiKey = _apiKeyController.text.trim();
+    final apiUrl = _apiUrlController.text.trim();
+
+    await SettingsManager().setSetting(_apiKeyKey, apiKey);
+    await SettingsManager().setSetting(_apiUrlKey, apiUrl);
+
+    debugPrint("✅ Saved API: $apiUrl | Key: $apiKey");
+
+    SnackBar(content: Text("Ember’s API settings updated"));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(Icons.api, color: ForgeColors.amber),
+          title: Text("Ember AI API Config", style: ForgeTextStyles.tileTitle),
+          subtitle: Text(
+            "Tap to configure API endpoint and key.",
+            style: ForgeTextStyles.tileSubtitle,
+          ),
+          trailing: Icon(_showFields ? Icons.expand_less : Icons.expand_more),
+          onTap: _toggleFields,
+        ),
+        if (_showFields)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: [
+                TextField(
+                  autofillHints: null,
+                  enableSuggestions: false,
+                  enableIMEPersonalizedLearning: false,
+                  autocorrect: false,
+                  controller: _apiUrlController,
+                  decoration: InputDecoration(
+                    floatingLabelStyle: TextStyle(color: ForgeColors.amber300),
+                    labelText: "API URL",
+                    hintText: "https://api.your-llm.dev",
+                  ),
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  autofillHints: null,
+                  enableSuggestions: false,
+                  enableIMEPersonalizedLearning: false,
+                  autocorrect: false,
+                  controller: _apiKeyController,
+                  decoration: InputDecoration(
+                    floatingLabelStyle: TextStyle(color: ForgeColors.amber300),
+                    labelText: "API Key",
+                    hintText: "sk-XXXX...",
+                  ),
+                  obscureText: true,
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: _saveSettings,
+                    icon: Icon(Icons.save_alt_rounded, color: Colors.amber),
+                    label: Text("Save", style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
