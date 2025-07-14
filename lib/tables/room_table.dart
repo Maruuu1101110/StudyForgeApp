@@ -5,6 +5,7 @@ import 'package:path/path.dart';
 import 'package:study_forge/models/room_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:study_forge/utils/file_manager_service.dart';
+import 'package:study_forge/tables/db_helper.dart';
 
 class RoomTableManager {
   static Database? _database;
@@ -65,7 +66,8 @@ class RoomTableManager {
 
   // ensure the rooms table exists
   static Future<void> ensureRoomTableExists() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       await db.execute(createRoomTableSQL);
     } catch (e) {
@@ -78,7 +80,8 @@ class RoomTableManager {
 
   // insert a new room
   static Future<int> insertRoom(Room room) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final roomId = await db.insert(
         _tableName,
@@ -110,7 +113,8 @@ class RoomTableManager {
 
   // get all rooms
   static Future<List<Room>> getAllRooms() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final List<Map<String, dynamic>> maps = await db.query(
         _tableName,
@@ -124,7 +128,8 @@ class RoomTableManager {
 
   // get room by ID
   static Future<Room?> getRoomById(int id) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final List<Map<String, dynamic>> maps = await db.query(
         _tableName,
@@ -143,7 +148,8 @@ class RoomTableManager {
 
   // get room by subject
   static Future<Room?> getRoomBySubject(String subject) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final List<Map<String, dynamic>> maps = await db.query(
         _tableName,
@@ -162,7 +168,8 @@ class RoomTableManager {
 
   // update room
   static Future<int> updateRoom(Room room) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       return await db.update(
         _tableName,
@@ -177,7 +184,8 @@ class RoomTableManager {
 
   // delete room
   static Future<int> deleteRoom(int id) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       // Delete from database first
       final deletedRows = await db.delete(
@@ -206,7 +214,8 @@ class RoomTableManager {
 
   // get rooms by status
   static Future<List<Room>> getRoomsByStatus(String status) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final List<Map<String, dynamic>> maps = await db.query(
         _tableName,
@@ -222,7 +231,8 @@ class RoomTableManager {
 
   // get favorite rooms
   static Future<List<Room>> getFavoriteRooms() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final List<Map<String, dynamic>> maps = await db.query(
         _tableName,
@@ -238,7 +248,8 @@ class RoomTableManager {
 
   // update room last accessed time
   static Future<int> updateLastAccessedTime(int roomId) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       return await db.update(
         _tableName,
@@ -253,7 +264,8 @@ class RoomTableManager {
 
   // for study session
   Future<int> updateTotalSessions(int roomId, int newCount) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     return await db.update(
       _tableName,
       {'totalSessions': newCount},
@@ -263,7 +275,8 @@ class RoomTableManager {
   }
 
   Future<int> updateStudyTime(int roomId, int totalMinutes) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     return await db.update(
       _tableName,
       {'totalStudyTime': totalMinutes},
@@ -274,7 +287,8 @@ class RoomTableManager {
 
   // increment session count and add study time
   static Future<int> addSessionData(int roomId, int studyTimeMinutes) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       return await db.rawUpdate(
         '''
@@ -293,7 +307,8 @@ class RoomTableManager {
 
   // toggle favorite status
   static Future<int> toggleFavorite(int roomId) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       return await db.rawUpdate(
         '''
@@ -313,7 +328,8 @@ class RoomTableManager {
 
   // archive room (set status to Archived)
   static Future<int> archiveRoom(int roomId) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       return await db.update(
         _tableName,
@@ -328,7 +344,8 @@ class RoomTableManager {
 
   // restore room (set status to Active)
   static Future<int> restoreRoom(int roomId) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       return await db.update(
         _tableName,
@@ -343,7 +360,8 @@ class RoomTableManager {
 
   // get room statistics
   static Future<Map<String, dynamic>> getRoomStats() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final result = await db.rawQuery('''
         SELECT 
@@ -368,7 +386,8 @@ class RoomTableManager {
 
   // search rooms by subject or subtitle
   static Future<List<Room>> searchRooms(String query) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final List<Map<String, dynamic>> maps = await db.query(
         _tableName,
@@ -384,7 +403,8 @@ class RoomTableManager {
 
   // get recently accessed rooms
   static Future<List<Room>> getRecentlyAccessedRooms({int limit = 5}) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final List<Map<String, dynamic>> maps = await db.query(
         _tableName,
@@ -400,7 +420,8 @@ class RoomTableManager {
 
   // bulk delete rooms by IDs
   static Future<int> deleteRooms(List<int> roomIds) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       final placeholders = roomIds.map((id) => '?').join(',');
       return await db.rawDelete(
