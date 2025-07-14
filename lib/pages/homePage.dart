@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 // database
 import 'package:study_forge/models/note_model.dart';
 import 'package:study_forge/models/reminder_model.dart';
 import 'package:study_forge/models/user_profile_model.dart';
+import 'package:study_forge/pages/ember_pages/ember_chat_provider.dart';
+import 'package:study_forge/pages/session_pages/studySession.dart';
 import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/tables/reminder_table.dart';
 
@@ -18,8 +21,11 @@ import 'package:study_forge/pages/editor_pages/noteEditPage.dart';
 import 'package:study_forge/pages/editor_pages/reminderEditPage.dart';
 
 // utils
+import 'package:study_forge/utils/navigationObservers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:study_forge/utils/gamification_service.dart';
+
+import 'package:study_forge/themes/forge_colors.dart';
 
 class ForgeHomePage extends StatefulWidget {
   const ForgeHomePage({super.key});
@@ -29,7 +35,10 @@ class ForgeHomePage extends StatefulWidget {
 }
 
 class _ForgeHomeState extends State<ForgeHomePage>
-    with TickerProviderStateMixin {
+    with RouteAware, TickerProviderStateMixin {
+  final TextEditingController _controllerHome = TextEditingController();
+  late final FocusNode _textFieldFocusNode;
+  late final FocusNode _pageFocusNode;
   final noteManager = NoteManager();
   final reminderManager = ReminderManager();
   final gamificationService = GamificationService();
@@ -38,19 +47,24 @@ class _ForgeHomeState extends State<ForgeHomePage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // ember chat stuff
+  bool _isTextValid = false;
+
   // user profile stuff for gamification bs
   UserProfile? userProfile;
   bool isLoadingProfile = true;
+  static const int _maxMessageLength = 1000;
 
   @override
   void initState() {
     //UserProfileManager().clearUserProfile(); // for debugging
     super.initState();
     _checkFirstRun();
-    loadNotes();
-    loadReminders();
     loadPendingReminders();
     loadUserProfile();
+    loadNotes();
+
+    _controllerHome.addListener(_handleTextChanged);
 
     // setup animations
     _fadeController = AnimationController(
@@ -72,15 +86,26 @@ class _ForgeHomeState extends State<ForgeHomePage>
           CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
         );
 
-    // start animation
     _fadeController.forward();
     _slideController.forward();
+    _textFieldFocusNode = FocusNode();
+    _pageFocusNode = FocusNode();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _textFieldFocusNode.dispose();
+    _controllerHome.removeListener(_handleTextChanged);
+    _pageFocusNode.dispose();
+    routeObserver.unsubscribe(this);
     super.dispose();
   }
 
@@ -146,18 +171,54 @@ class _ForgeHomeState extends State<ForgeHomePage>
     );
   }
 
-  Set<String> selectedNotes = {};
-  List<Note> searchResults = [];
+  void loadStudySession() async {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) =>
+            StudySessionPage(source: NavigationSource.homePage),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        final shouldExit = await showDialog<bool>(
+  void _sendMessage() {
+    final quickText = _controllerHome.text.trim();
+    _controllerHome.clear();
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => EmberChatPage(quickMessage: quickText),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
+    );
+  }
+
+  void _handleTextChanged() {
+    final isValid =
+        _controllerHome.text.trim().isNotEmpty &&
+        _controllerHome.text.length <= _maxMessageLength;
+
+    if (isValid && !_isTextValid) {
+      setState(() => _isTextValid = true);
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) setState(() {});
+      });
+    } else if (!isValid && _isTextValid) {
+      setState(() {});
+
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) setState(() => _isTextValid = false);
+      });
+    }
+  }
+
+  Future<bool> _showExitConfirmationDialog() async {
+    return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: Color.fromRGBO(30, 30, 30, 1),
+            backgroundColor: ForgeColors.black,
             title: const Text('Exit App'),
             content: const Text('Are you sure you want to exit?'),
             actions: [
@@ -165,118 +226,134 @@ class _ForgeHomeState extends State<ForgeHomePage>
                 onPressed: () => Navigator.of(context).pop(false),
                 child: const Text(
                   'Cancel',
-                  style: TextStyle(color: Colors.amber),
+                  style: TextStyle(color: ForgeColors.amber),
                 ),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 child: const Text(
                   'Exit',
-                  style: TextStyle(color: Colors.amber),
+                  style: TextStyle(color: ForgeColors.amber),
                 ),
               ),
             ],
           ),
-        );
-        if (shouldExit == true) {
+        ) ??
+        false; // Handle null case
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        final shouldExit = await _showExitConfirmationDialog();
+        if (shouldExit) {
           SystemNavigator.pop();
         }
       },
       child: Scaffold(
-        backgroundColor: const Color.fromRGBO(15, 15, 15, 1),
+        backgroundColor: ForgeColors.scaffoldBackground,
         drawer: ForgeDrawer(selectedTooltip: "Home"),
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 300.0,
-              floating: false,
-              pinned: true,
-              backgroundColor: Colors.transparent,
-              scrolledUnderElevation: 0,
-              elevation: 0,
-              leading: Builder(
-                builder: (context) {
-                  return Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.menu_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      onPressed: () {
-                        Scaffold.of(context).openDrawer();
-                      },
-                    ),
-                  );
-                },
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0xFFC0C0C0).withValues(alpha: 0.15),
-                        Colors.grey.shade800.withValues(alpha: 0.1),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 60),
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: GlowingLogo(),
-                      ),
-                      const SizedBox(height: 20),
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: ShaderMask(
-                          shaderCallback: (bounds) => LinearGradient(
-                            colors: [
-                              Colors.amber.shade200,
-                              Colors.amber,
-                              Colors.orange.shade300,
-                            ],
-                          ).createShader(bounds),
-                          child: const Text(
-                            'Welcome to Study Forge',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w300,
-                              color: Colors.white,
-                              letterSpacing: 1.2,
-                            ),
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Focus(
+            focusNode: _pageFocusNode,
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 300.0,
+                  floating: false,
+                  pinned: true,
+                  backgroundColor: ForgeColors.transparent,
+                  scrolledUnderElevation: 0,
+                  elevation: 0,
+                  leading: Builder(
+                    builder: (context) {
+                      return Container(
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.menu_rounded,
+                            color: ForgeColors.white,
+                            size: 24,
                           ),
+                          onPressed: () async {
+                            _textFieldFocusNode.unfocus();
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            await Future.delayed(
+                              const Duration(milliseconds: 50),
+                            );
+                            if (mounted) {
+                              Scaffold.of(context).openDrawer();
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            ForgeColors.silverGray.withValues(alpha: 0.15),
+                            ForgeColors.attachedFileBg.withValues(alpha: 0.1),
+                            ForgeColors.transparent,
+                          ],
                         ),
                       ),
-                    ],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 60),
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: GlowingLogo(),
+                          ),
+                          const SizedBox(height: 20),
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: ShaderMask(
+                              shaderCallback: (bounds) => LinearGradient(
+                                colors: [
+                                  ForgeColors.amber200,
+                                  ForgeColors.amber,
+                                  ForgeColors.orange300,
+                                ],
+                              ).createShader(bounds),
+                              child: const Text(
+                                'Welcome to Study Forge',
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w300,
+                                  color: ForgeColors.white,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: _buildElegantContent(),
+                SliverToBoxAdapter(
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: _buildElegantContent(),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -294,27 +371,39 @@ class _ForgeHomeState extends State<ForgeHomePage>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.transparent,
-                  Colors.amber.withValues(alpha: 0.8),
-                  Colors.transparent,
+                  ForgeColors.transparent,
+                  ForgeColors.amber.withValues(alpha: 0.8),
+                  ForgeColors.transparent,
                 ],
               ),
             ),
           ),
           const SizedBox(height: 40),
 
+          _buildAIMessagePanel(),
+
+          const SizedBox(height: 40),
+
           // quick action buttons grid
           _buildQuickActionsGrid(),
 
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
+
+          // reminder preview
+          _buildUpcomingRemindersSection(pendingReminders),
+
+          const SizedBox(height: 40),
 
           // user stats cards
           _buildStatsCards(),
 
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
 
-          // recent activity and achievements section
-          _buildRecentActivity(),
+          // achievements section
+          if (userProfile != null && userProfile!.badges.isNotEmpty) ...[
+            _buildBadgesSection(),
+            const SizedBox(height: 40),
+          ],
 
           const SizedBox(height: 40),
         ],
@@ -322,7 +411,86 @@ class _ForgeHomeState extends State<ForgeHomePage>
     );
   }
 
+  Widget _buildAIMessagePanel() {
+    final isMessageValid =
+        _controllerHome.text.trim().isNotEmpty &&
+        _controllerHome.text.length <= _maxMessageLength;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _controllerHome.text.length > _maxMessageLength
+                      ? ForgeColors.errorBorder.withValues(alpha: 0.5)
+                      : ForgeColors.white.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: TextField(
+                controller: _controllerHome,
+                focusNode: _textFieldFocusNode,
+                autofocus: false,
+                style: const TextStyle(color: ForgeColors.white, fontSize: 16),
+                decoration: InputDecoration(
+                  hintText: 'Ask Ember something...',
+                  hintStyle: TextStyle(
+                    color: ForgeColors.white.withValues(alpha: 0.6),
+                    fontSize: 16,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 5,
+                  ),
+                ),
+                onSubmitted: (_) => _sendMessage(),
+                onChanged: (_) => setState(() {}),
+                minLines: 1,
+                maxLines: 2,
+                maxLength: null,
+              ),
+            ),
+          ),
+
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: isMessageValid ? 28 : 0,
+            height: 48,
+            curve: Curves.easeInOut,
+            child: Visibility(
+              visible: isMessageValid,
+              child: IconButton(
+                onPressed: _sendMessage,
+                tooltip: "Send message",
+                icon: Icon(
+                  Icons.send_rounded,
+                  color: ForgeColors.amber,
+                  size: 30,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuickActionsGrid() {
+    final actionCardGradient = [
+      const Color.fromARGB(255, 54, 54, 54).withValues(alpha: 0.15),
+      ForgeColors.black.withValues(alpha: 0.1),
+      ForgeColors.transparent,
+    ];
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -333,7 +501,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w300,
-              color: Colors.amber.shade100,
+              color: ForgeColors.amber100,
               letterSpacing: 0.5,
             ),
           ),
@@ -345,16 +513,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                   icon: Icons.note_add_outlined,
                   title: 'New Note',
                   subtitle: 'Got something?',
-                  gradient: [
-                    const Color.fromARGB(
-                      255,
-                      54,
-                      54,
-                      54,
-                    ).withValues(alpha: 0.15),
-                    Colors.black.withValues(alpha: 0.1),
-                    Colors.transparent,
-                  ],
+                  gradient: actionCardGradient,
                   onTap: () async {
                     final result = await Navigator.of(context).push(
                       PageRouteBuilder(
@@ -380,16 +539,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                   icon: Icons.schedule_outlined,
                   title: 'Set Reminder',
                   subtitle: 'Heads up',
-                  gradient: [
-                    const Color.fromARGB(
-                      255,
-                      54,
-                      54,
-                      54,
-                    ).withValues(alpha: 0.15),
-                    Colors.black.withValues(alpha: 0.1),
-                    Colors.transparent,
-                  ],
+                  gradient: actionCardGradient,
                   onTap: () => Navigator.of(context).push(
                     PageRouteBuilder(
                       pageBuilder: (_, __, ___) =>
@@ -410,17 +560,8 @@ class _ForgeHomeState extends State<ForgeHomePage>
                   icon: Icons.book_outlined,
                   title: 'Study Session',
                   subtitle: 'Start studying',
-                  gradient: [
-                    const Color.fromARGB(
-                      255,
-                      54,
-                      54,
-                      54,
-                    ).withValues(alpha: 0.15),
-                    Colors.black.withValues(alpha: 0.1),
-                    Colors.transparent,
-                  ],
-                  onTap: () => _onStudySessionCompleted(),
+                  gradient: actionCardGradient,
+                  onTap: loadStudySession,
                 ),
               ),
               const SizedBox(width: 16),
@@ -429,16 +570,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                   icon: Icons.note_alt_outlined,
                   title: 'Load Notes',
                   subtitle: 'Access your notes',
-                  gradient: [
-                    const Color.fromARGB(
-                      255,
-                      54,
-                      54,
-                      54,
-                    ).withValues(alpha: 0.15),
-                    Colors.black.withValues(alpha: 0.1),
-                    Colors.transparent,
-                  ],
+                  gradient: actionCardGradient,
                   onTap: () => _loadNotesWithStyle(),
                 ),
               ),
@@ -479,7 +611,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: ForgeColors.white.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -487,12 +619,12 @@ class _ForgeHomeState extends State<ForgeHomePage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.orange.shade500, size: 32),
+              Icon(icon, color: ForgeColors.orange500, size: 32),
               const SizedBox(height: 8),
               Text(
                 title,
                 style: TextStyle(
-                  color: Colors.orange.shade200,
+                  color: ForgeColors.orange200,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -502,7 +634,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
               Text(
                 subtitle,
                 style: TextStyle(
-                  color: Colors.amber.shade200.withValues(alpha: 0.8),
+                  color: ForgeColors.amber200.withValues(alpha: 0.8),
                   fontSize: 10,
                 ),
                 textAlign: TextAlign.center,
@@ -530,7 +662,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w300,
-                  color: Colors.amber.shade100,
+                  color: ForgeColors.amber100,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -542,7 +674,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                   ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.amber.shade600, Colors.orange.shade600],
+                      colors: [ForgeColors.amber600, ForgeColors.orange600],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -551,12 +683,12 @@ class _ForgeHomeState extends State<ForgeHomePage>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.star, color: Colors.white, size: 16),
+                      Icon(Icons.star, color: ForgeColors.white, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         'Level ${userProfile!.level}',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: ForgeColors.white,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
@@ -568,17 +700,19 @@ class _ForgeHomeState extends State<ForgeHomePage>
           ),
           const SizedBox(height: 16),
           if (isLoadingProfile)
-            const Center(child: CircularProgressIndicator(color: Colors.amber))
+            const Center(
+              child: CircularProgressIndicator(color: ForgeColors.amber),
+            )
           else if (userProfile != null) ...[
             // level progress bar
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: ForgeColors.black.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.amber.withValues(alpha: 0.3),
+                  color: ForgeColors.amber.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -591,7 +725,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                       Text(
                         gamificationService.getLevelTitle(userProfile!.level),
                         style: TextStyle(
-                          color: Colors.amber.shade100,
+                          color: ForgeColors.amber100,
                           fontWeight: FontWeight.w500,
                           fontSize: 16,
                         ),
@@ -599,7 +733,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                       Text(
                         '${userProfile!.experienceToNextLevel} XP to next level',
                         style: TextStyle(
-                          color: Colors.amber.shade300,
+                          color: ForgeColors.amber300,
                           fontSize: 12,
                         ),
                       ),
@@ -610,8 +744,10 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     borderRadius: BorderRadius.circular(8),
                     child: LinearProgressIndicator(
                       value: userProfile!.levelProgress,
-                      backgroundColor: Colors.amber.withValues(alpha: 0.2),
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                      backgroundColor: ForgeColors.amber.withValues(alpha: 0.2),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        ForgeColors.amber,
+                      ),
                       minHeight: 6,
                     ),
                   ),
@@ -626,7 +762,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     'Study Streak',
                     '${userProfile!.studyStreak} days',
                     Icons.local_fire_department_outlined,
-                    Colors.orange,
+                    ForgeColors.orange,
                     subtitle: gamificationService.getStreakMessage(
                       userProfile!.studyStreak,
                     ),
@@ -638,7 +774,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     'Current XP',
                     '${userProfile!.experiencePoints}',
                     Icons.stars_outlined,
-                    Colors.amber,
+                    ForgeColors.amber,
                     subtitle:
                         '${userProfile!.experienceToNextLevel} to next level',
                   ),
@@ -649,7 +785,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     'Notes Created',
                     '${userProfile!.notesCreated}',
                     Icons.description_outlined,
-                    Colors.deepOrange,
+                    ForgeColors.deepOrange,
                     subtitle: '${notes.length} current',
                   ),
                 ),
@@ -663,7 +799,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     'Tasks Done',
                     '${userProfile!.remindersCompleted}',
                     Icons.check_circle_outline,
-                    Colors.green,
+                    ForgeColors.green,
                     subtitle: '${pendingReminders.length} pending',
                   ),
                 ),
@@ -673,7 +809,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     'Badges',
                     '${userProfile!.badges.length}',
                     Icons.military_tech_outlined,
-                    Colors.purple,
+                    ForgeColors.purple,
                     subtitle: 'Achievements',
                   ),
                 ),
@@ -683,7 +819,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     'Sessions',
                     '${userProfile!.totalStudySessions}',
                     Icons.timeline_outlined,
-                    Colors.blue,
+                    ForgeColors.blue,
                     subtitle: 'Study Sessions',
                   ),
                 ),
@@ -693,7 +829,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
             Center(
               child: Text(
                 'Unable to load progress data',
-                style: TextStyle(color: Colors.amber.shade300),
+                style: TextStyle(color: ForgeColors.amber300),
               ),
             ),
         ],
@@ -711,7 +847,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
     return Container(
       height: 120,
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
+        color: ForgeColors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
@@ -725,7 +861,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
             Text(
               value,
               style: TextStyle(
-                color: Colors.white,
+                color: ForgeColors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -733,7 +869,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
             Text(
               title,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: ForgeColors.white.withValues(alpha: 0.9),
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -759,68 +895,83 @@ class _ForgeHomeState extends State<ForgeHomePage>
     );
   }
 
-  Widget _buildRecentActivity() {
+  Widget _buildReminderPreview(List<Reminder> reminders) {
+    if (reminders.isEmpty) {
+      return const Text(
+        "No reminders in the next 2 days.",
+        style: TextStyle(color: Colors.white54),
+      );
+    }
+
     return Column(
-      children: [
-        // show achievements if user has badges
-        if (userProfile != null && userProfile!.badges.isNotEmpty) ...[
-          _buildBadgesSection(),
-          const SizedBox(height: 30),
-        ],
-        // always show recent activity section
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Recent Activity',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w300,
-                  color: Colors.amber.shade100,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    _buildActivityItem(
-                      'Welcome to Study Forge!',
-                      'Start creating notes and reminders',
-                      Icons.celebration,
-                      Colors.amber,
-                    ),
-                    _buildDivider(),
-                    _buildActivityItem(
-                      'Complete your first study session',
-                      'Tap "Study Session" to begin',
-                      Icons.psychology,
-                      Colors.orange,
-                    ),
-                    _buildDivider(),
-                    _buildActivityItem(
-                      'Create your first note',
-                      'Tap "New Note" to start',
-                      Icons.note_add,
-                      Colors.deepOrange,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      children: reminders.map((reminder) {
+        final time = DateFormat('hh:mm a').format(reminder.dueDate);
+        final isToday = DateTime.now().day == reminder.dueDate.day;
+
+        return ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+          leading: Icon(
+            Icons.access_time,
+            color: isToday ? ForgeColors.amber : ForgeColors.orange,
           ),
-        ),
-      ],
+          title: Text(
+            reminder.title,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
+          ),
+          subtitle: Text(
+            "${isToday ? 'Today' : 'Tomorrow'} · $time",
+            style: const TextStyle(color: Colors.white70),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  List<Reminder> _filterUpcomingReminders(List<Reminder> allReminders) {
+    final now = DateTime.now();
+    final tomorrow = now.add(Duration(days: 1));
+    final end = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59);
+
+    return allReminders.where((reminder) {
+      final time = reminder.dueDate;
+      return time.isAfter(now) && time.isBefore(end);
+    }).toList()..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+  }
+
+  Widget _buildUpcomingRemindersSection(List<Reminder> allReminders) {
+    final upcoming = _filterUpcomingReminders(allReminders);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Upcoming Reminders',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w300,
+              color: ForgeColors.amber100,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(8),
+            alignment: Alignment.centerLeft,
+            decoration: BoxDecoration(
+              color: ForgeColors.black.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: ForgeColors.white.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            child: _buildReminderPreview(upcoming),
+          ),
+        ],
+      ),
     );
   }
 
@@ -838,7 +989,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w300,
-                  color: Colors.amber.shade100,
+                  color: ForgeColors.amber100,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -846,14 +997,14 @@ class _ForgeHomeState extends State<ForgeHomePage>
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.purple.shade600, Colors.pink.shade600],
+                    colors: [ForgeColors.purple600, ForgeColors.pink600],
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${userProfile!.badges.length} earned',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: ForgeColors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -864,10 +1015,10 @@ class _ForgeHomeState extends State<ForgeHomePage>
           const SizedBox(height: 16),
           Container(
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: ForgeColors.black.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: ForgeColors.white.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
@@ -887,80 +1038,28 @@ class _ForgeHomeState extends State<ForgeHomePage>
     );
   }
 
-  Widget _buildActivityItem(
-    String title,
-    String time,
-    IconData icon,
-    Color color,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      height: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      color: Colors.white.withValues(alpha: 0.1),
-    );
-  }
-
   void _loadNotesWithStyle() async {
     loadAllNotes();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: ForgeColors.transparent,
         elevation: 0,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
         content: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.amber.shade600, Colors.orange.shade700],
+              colors: [ForgeColors.amber600, ForgeColors.orange700],
             ),
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.all(16),
           child: const Text(
             'Notes loaded successfully!',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              color: ForgeColors.white,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ),
@@ -983,18 +1082,6 @@ class _ForgeHomeState extends State<ForgeHomePage>
     }
   }
 
-  Future<void> _onStudySessionCompleted() async {
-    final oldProfile = userProfile;
-    final newProfile = await gamificationService.recordStudySession();
-
-    setState(() => userProfile = newProfile);
-
-    // same gamification check but for study sessions
-    if (oldProfile != null) {
-      await _showGamificationNotifications(oldProfile, newProfile, 25);
-    }
-  }
-
   Future<void> _showGamificationNotifications(
     UserProfile oldProfile,
     UserProfile newProfile,
@@ -1002,7 +1089,6 @@ class _ForgeHomeState extends State<ForgeHomePage>
   ) async {
     int delay = 0;
 
-    // level up show fist
     if (GamificationService.didLevelUp(oldProfile, newProfile)) {
       Future.delayed(Duration(milliseconds: delay), () {
         _showLevelUpCelebration(newProfile.level);
@@ -1029,21 +1115,21 @@ class _ForgeHomeState extends State<ForgeHomePage>
   void _showLevelUpCelebration(int newLevel) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: ForgeColors.transparent,
         elevation: 0,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 4),
         content: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.purple.shade600, Colors.pink.shade600],
+              colors: [ForgeColors.purple600, ForgeColors.pink600],
             ),
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(Icons.celebration, color: Colors.white, size: 24),
+              Icon(Icons.celebration, color: ForgeColors.white, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1053,14 +1139,14 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     Text(
                       'LEVEL UP! 🎉',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: ForgeColors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     Text(
                       'You reached Level $newLevel!',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: ForgeColors.white, fontSize: 14),
                     ),
                   ],
                 ),
@@ -1075,21 +1161,21 @@ class _ForgeHomeState extends State<ForgeHomePage>
   void _showBadgeEarned(String badge) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: ForgeColors.transparent,
         elevation: 0,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
         content: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.orange.shade600, Colors.amber.shade600],
+              colors: [ForgeColors.orange600, ForgeColors.amber600],
             ),
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(Icons.military_tech, color: Colors.white, size: 24),
+              Icon(Icons.military_tech, color: ForgeColors.white, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1099,14 +1185,14 @@ class _ForgeHomeState extends State<ForgeHomePage>
                     Text(
                       'BADGE EARNED! 🏆',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: ForgeColors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     Text(
                       badge,
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: ForgeColors.white, fontSize: 14),
                     ),
                   ],
                 ),
@@ -1121,14 +1207,14 @@ class _ForgeHomeState extends State<ForgeHomePage>
   void _showXPGained(int xp) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: ForgeColors.transparent,
         elevation: 0,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
         content: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.amber.shade600, Colors.orange.shade700],
+              colors: [ForgeColors.amber600, ForgeColors.orange700],
             ),
             borderRadius: BorderRadius.circular(12),
           ),
@@ -1136,12 +1222,12 @@ class _ForgeHomeState extends State<ForgeHomePage>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.stars, color: Colors.white, size: 20),
+              Icon(Icons.stars, color: ForgeColors.white, size: 20),
               const SizedBox(width: 8),
               Text(
                 '+$xp XP',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: ForgeColors.white,
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),
@@ -1159,25 +1245,25 @@ class _ForgeHomeState extends State<ForgeHomePage>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.amber.shade600.withValues(alpha: 0.3),
-            Colors.orange.shade600.withValues(alpha: 0.3),
+            ForgeColors.amber600.withValues(alpha: 0.3),
+            ForgeColors.orange600.withValues(alpha: 0.3),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.amber.withValues(alpha: 0.5),
+          color: ForgeColors.amber.withValues(alpha: 0.5),
           width: 1,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.military_tech, color: Colors.amber.shade300, size: 16),
+          Icon(Icons.military_tech, color: ForgeColors.amber300, size: 16),
           const SizedBox(width: 6),
           Text(
             badge,
             style: TextStyle(
-              color: Colors.amber.shade100,
+              color: ForgeColors.amber100,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),

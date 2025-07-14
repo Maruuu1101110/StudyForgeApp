@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:study_forge/utils/navigationObservers.dart';
 import 'package:study_forge/pages/reminderPage.dart';
 import 'package:study_forge/main.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -71,7 +72,6 @@ class NotificationService {
       const notificationDetails = NotificationDetails(android: androidDetails);
 
       // time date zone convertion for version compatibility
-      // Convert DateTime to TZDateTime properly
       final scheduledTZDateTime = tz.TZDateTime.from(scheduledTime, tz.local);
 
       // Debug logging
@@ -92,6 +92,27 @@ class NotificationService {
         payload: payload ?? 'study_forge',
       );
 
+      await scheduleRemindersUntilDue(
+        baseId: id + 100,
+        title: "⏰ Daily 8AM Reminder",
+        body: title != null
+            ? "Don’t forget: $title\n$body"
+            : body ?? "You’ve got something to check this morning!",
+        dueDate: scheduledTime,
+        payload: payload,
+      );
+
+      scheduleDueTomorrowNotification(
+        id: id + 200,
+        title: "📌 Due Soon: ${title ?? 'Untitled Task'}",
+        body: body != null
+            ? "Heads up — due tomorrow! 📅\n$body"
+            : "Don't forget to prepare!",
+
+        dueDate: scheduledTime,
+        payload: payload,
+      );
+
       debugPrint("Notification scheduled successfully");
     } catch (e, stackTrace) {
       debugPrint("Error scheduling notification: $e");
@@ -109,7 +130,8 @@ class NotificationService {
     }
     navigatorKey.currentState?.push(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => ForgeReminderPage(),
+        pageBuilder: (_, __, ___) =>
+            ForgeReminderPage(source: NavigationSource.direct),
         transitionsBuilder: (_, animation, __, child) =>
             FadeTransition(opacity: animation, child: child),
       ),
@@ -119,6 +141,8 @@ class NotificationService {
   static Future<void> cancelNotification(int notificationId) async {
     try {
       await _flutterLocalNotificationsPlugin.cancel(notificationId);
+      await _flutterLocalNotificationsPlugin.cancel(notificationId + 100);
+      await _flutterLocalNotificationsPlugin.cancel(notificationId + 200);
       debugPrint('Cancelled notification with ID: $notificationId');
     } catch (e) {
       debugPrint('Error cancelling notification $notificationId: $e');
@@ -146,5 +170,82 @@ class NotificationService {
     } catch (e) {
       debugPrint("Error getting pending notifications: $e");
     }
+  }
+}
+
+Future<void> scheduleRemindersUntilDue({
+  required int baseId,
+  required String? title,
+  required String? body,
+  required DateTime dueDate,
+  String? payload,
+}) async {
+  final now = DateTime.now();
+  DateTime currentDay = DateTime(now.year, now.month, now.day, 8);
+
+  if (now.isAfter(currentDay)) {
+    currentDay = currentDay.add(const Duration(days: 1));
+  }
+
+  int count = 0;
+  while (currentDay.isBefore(dueDate)) {
+    await NotificationService._flutterLocalNotificationsPlugin.zonedSchedule(
+      baseId + count,
+      title ?? '📅 Daily Reminder',
+      body ?? 'Reminder for upcoming task!',
+      tz.TZDateTime.from(currentDay, tz.local),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'reminder_channel_id',
+          'Reminders',
+          channelDescription: 'Reminder notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: payload ?? 'study_forge_persistent',
+    );
+    currentDay = currentDay.add(const Duration(days: 1));
+    count++;
+  }
+
+  debugPrint("Scheduled $count daily 8AM reminders until $dueDate");
+}
+
+Future<void> scheduleDueTomorrowNotification({
+  required int id,
+  String? title,
+  String? body,
+  required DateTime dueDate,
+  String? payload,
+}) async {
+  final notifyTime = DateTime(
+    dueDate.year,
+    dueDate.month,
+    dueDate.day - 1,
+    8,
+    0,
+  );
+  if (notifyTime.isAfter(DateTime.now())) {
+    final androidDetails = AndroidNotificationDetails(
+      'reminder_channel_id',
+      'Reminders',
+      channelDescription: 'Reminder notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    );
+    final notificationDetails = NotificationDetails(android: androidDetails);
+
+    await NotificationService._flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      title ?? '📌 Due Tomorrow!',
+      body ?? 'Something is due tomorrow: $title',
+      tz.TZDateTime.from(notifyTime, tz.local),
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: payload ?? 'study_forge_due',
+    );
   }
 }

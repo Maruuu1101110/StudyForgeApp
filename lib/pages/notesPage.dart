@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:study_forge/pages/editor_pages/markdownEditPage.dart';
 
 // custom widgets
 import '../components/sideBar.dart';
@@ -13,8 +14,7 @@ import 'package:study_forge/tables/note_table.dart';
 import 'package:study_forge/utils/navigationObservers.dart';
 
 // pages
-
-enum NavigationSource { sidebar, homePage, direct }
+import 'editor_pages/noteEditPage.dart';
 
 class ForgeNotesPage extends StatefulWidget {
   final NavigationSource source;
@@ -201,6 +201,82 @@ class _ForgeNotesState extends State<ForgeNotesPage>
     );
   }
 
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.note_add_outlined,
+            size: 64,
+            color: Colors.white.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No Notes yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w300,
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap the + button to add your first note',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) =>
+                    NoteEditPage(noteManager: noteManager, isMD: false),
+                transitionsBuilder: (_, animation, __, child) =>
+                    FadeTransition(opacity: animation, child: child),
+              ),
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Create new note'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) =>
+                    MarkDownEditPage(noteManager: noteManager, isMD: true),
+                transitionsBuilder: (_, animation, __, child) =>
+                    FadeTransition(opacity: animation, child: child),
+              ),
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Create new MD note'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -266,15 +342,6 @@ class _ForgeNotesState extends State<ForgeNotesPage>
           leading: Builder(
             builder: (context) {
               return Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
                 child: IconButton(
                   icon: const Icon(
                     Icons.menu_rounded,
@@ -418,45 +485,47 @@ class _ForgeNotesState extends State<ForgeNotesPage>
 
         body: Padding(
           padding: EdgeInsetsGeometry.all(10),
-          child: ListView.builder(
-            itemCount: searchResults.length,
-            itemBuilder: (context, index) {
-              final note = searchResults[index];
+          child: searchResults.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
+                  itemCount: searchResults.length,
+                  itemBuilder: (context, index) {
+                    final note = searchResults[index];
 
-              // animations for this card
-              if (index >= _slideAnimations.length ||
-                  index >= _fadeAnimations.length) {
-                return const SizedBox.shrink();
-              }
+                    // animations for this card
+                    if (index >= _slideAnimations.length ||
+                        index >= _fadeAnimations.length) {
+                      return const SizedBox.shrink();
+                    }
 
-              return SlideTransition(
-                position: _slideAnimations[index],
-                child: FadeTransition(
-                  opacity: _fadeAnimations[index],
-                  child: Padding(
-                    key: ValueKey(note.id),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 0,
-                      vertical: 4.0,
-                    ),
-                    child: NoteCard(
-                      note: note,
-                      isSelected: selectedNotes.contains(note.id),
-                      isSelectionMode: selectedNotes.isNotEmpty,
-                      onSelectToggle: (id) {
-                        setState(() {
-                          selectedNotes.contains(id)
-                              ? selectedNotes.remove(id)
-                              : selectedNotes.add(id);
-                        });
-                      },
-                      onRefresh: () => loadNotes(),
-                    ),
-                  ),
+                    return SlideTransition(
+                      position: _slideAnimations[index],
+                      child: FadeTransition(
+                        opacity: _fadeAnimations[index],
+                        child: Padding(
+                          key: ValueKey(note.id),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 0,
+                            vertical: 4.0,
+                          ),
+                          child: NoteCard(
+                            note: note,
+                            isSelected: selectedNotes.contains(note.id),
+                            isSelectionMode: selectedNotes.isNotEmpty,
+                            onSelectToggle: (id) {
+                              setState(() {
+                                selectedNotes.contains(id)
+                                    ? selectedNotes.remove(id)
+                                    : selectedNotes.add(id);
+                              });
+                            },
+                            onRefresh: () => loadNotes(),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ),
     );

@@ -19,7 +19,9 @@ migrate_working_dir/
 .idea/
 
 # owners preferences
-ideas/
+personals/
+.env
+.envexample
 
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
@@ -46,3 +48,28 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# macOS specific
+*.DS_Store
+
+# Linux + swap
+*.swp
+*~
+
+# Flutter build
+**/generated_plugin_registrant.dart
+
+# Android specific
+**/android/local.properties
+**/android/.gradle/
+**/android/captures/
+
+# iOS specific
+**/ios/Pods/
+**/ios/Runner.xcworkspace/
+**/ios/.symlinks/
+
+# Firebase/Google Services
+google-services.json
+GoogleService-Info.plist
+

@@ -4,6 +4,7 @@ import 'package:path/path.dart';
 import 'package:study_forge/models/note_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:study_forge/tables/user_profile_table.dart';
+import 'package:study_forge/tables/db_helper.dart';
 
 class NoteManager {
   static Database? _database;
@@ -41,7 +42,8 @@ class NoteManager {
   }
 
   Future<void> ensureNoteTableExists() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final result = await db.rawQuery('PRAGMA table_info(notes)');
     if (result.isEmpty) {
       await db.execute(createNoteTableSQL);
@@ -57,7 +59,7 @@ class NoteManager {
     String content,
     bool isMarkDown,
   ) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
 
     await UserProfileManager().incrementNotesCreated();
 
@@ -86,7 +88,8 @@ class NoteManager {
   }
 
   Future<List<Note>> getAllNotes() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final maps = await db.query(
       'notes',
       orderBy: 'bookmarked DESC, created_at DESC, title ASC',
@@ -96,7 +99,8 @@ class NoteManager {
   }
 
   Future<List<Note>> searchNotes(String query) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final maps = await db.query(
       'notes',
       where: 'title LIKE ? OR content LIKE ?',
@@ -112,7 +116,8 @@ class NoteManager {
     String newContent,
     bool isMarkDown,
   ) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.update(
       'notes',
       {
@@ -126,7 +131,8 @@ class NoteManager {
   }
 
   Future<void> toggleBookmark(String id, bool isBookmarked) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.update(
       'notes',
       {'bookmarked': isBookmarked ? 1 : 0},
@@ -136,18 +142,21 @@ class NoteManager {
   }
 
   Future<void> deleteNote(String id) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.delete('notes', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> clearDB() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.execute("DELETE FROM notes");
   }
 
   // This is during development, so we can run migrations manually for debugging purposes.
   Future<void> migrateDatabaseAddCreatedAt() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     try {
       await db.execute("ALTER TABLE notes ADD COLUMN created_at INTEGER");
       await db.execute(
@@ -160,7 +169,8 @@ class NoteManager {
   }
 
   Future<void> migrateDatabaseAddBookmarked() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final result = await db.rawQuery('PRAGMA table_info(notes)');
     print(result);
     await db.execute('''
@@ -169,7 +179,8 @@ class NoteManager {
   }
 
   Future<void> migrateDatabaseAddMarkdown() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final result = await db.rawQuery('PRAGMA table_info(notes)');
     print(result);
     await db.execute('''

@@ -4,6 +4,9 @@ import 'package:path/path.dart';
 import 'package:study_forge/models/reminder_model.dart';
 import 'package:study_forge/tables/user_profile_table.dart';
 import 'package:study_forge/utils/notification_service.dart';
+import 'package:flutter/material.dart';
+import 'package:study_forge/utils/gamification_service.dart';
+import 'package:study_forge/tables/db_helper.dart';
 
 class ReminderManager {
   static Database? _database;
@@ -45,7 +48,7 @@ class ReminderManager {
   }
 
   Future<void> ensureNotificationExists() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
     try {
       await db.execute(
         'ALTER TABLE reminders ADD COLUMN isNotifEnabled INTEGER DEFAULT 1',
@@ -59,12 +62,13 @@ class ReminderManager {
   }
 
   Future<void> ensureReminderTableExists() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.execute(createReminderTableSQL);
   }
 
   Future<void> addReminder(Reminder reminder) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
 
     await db.insert(
       'reminders',
@@ -74,7 +78,7 @@ class ReminderManager {
   }
 
   Future<void> updateReminder(Reminder reminder) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
 
     await db.update(
       'reminders',
@@ -85,17 +89,19 @@ class ReminderManager {
   }
 
   Future<List<Reminder>> getAllReminders() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final List<Map<String, dynamic>> maps = await db.query(
       'reminders',
-      orderBy: 'isPinned DESC ,dueDate ASC',
+      orderBy: 'isPinned DESC ,dueDate DESC',
     );
 
     return List.generate(maps.length, (i) => Reminder.fromMap(maps[i]));
   }
 
   Future<Reminder?> getReminderById(String id) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final List<Map<String, dynamic>> maps = await db.query(
       'reminders',
       where: 'id = ?',
@@ -109,7 +115,7 @@ class ReminderManager {
   }
 
   Future<void> deleteReminder(String id) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
 
     final reminder = await getReminderById(id);
     if (reminder != null) {
@@ -120,7 +126,7 @@ class ReminderManager {
   }
 
   Future<void> deleteAllReminders() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
 
     // cancel notifications before deleting reminders
     await NotificationService.cancelAllNotifications();
@@ -129,7 +135,8 @@ class ReminderManager {
   }
 
   Future<void> togglePinned(String id, bool isPinned) async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     await db.update(
       'reminders',
       {'isPinned': isPinned ? 1 : 0},
@@ -138,11 +145,20 @@ class ReminderManager {
     );
   }
 
-  Future<void> markAsCompleted(String id, bool isCompleted) async {
-    final db = await database;
+  Future<void> markAsCompleted(
+    String id,
+    bool isCompleted,
+    BuildContext context,
+  ) async {
+    final db = await DBHelper.instance.database;
 
-    await UserProfileManager().incrementRemindersCompleted();
+    // Step 1: Snapshot old profile
+    final oldProfile = await UserProfileManager().getUserProfile();
 
+    // Step 2: Update XP and stats
+    final newProfile = await GamificationService().recordReminderCompleted();
+
+    // Step 3: Optional: Cancel notification
     if (isCompleted) {
       final reminder = await getReminderById(id);
       if (reminder != null) {
@@ -150,16 +166,26 @@ class ReminderManager {
       }
     }
 
+    // Step 4: Update DB status
     await db.update(
       'reminders',
       {'isCompleted': isCompleted ? 1 : 0},
       where: 'id = ?',
       whereArgs: [id],
     );
+
+    // Step 5: Show any level up or badge celebration
+    await GamificationService().showGamificationNotifications(
+      oldProfile,
+      newProfile,
+      25, // xp amount for completing a reminder
+      context,
+    );
   }
 
   Future<List<Reminder>> getPinnedReminders() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final maps = await db.query(
       'reminders',
       where: 'isPinned = ?',
@@ -169,7 +195,8 @@ class ReminderManager {
   }
 
   Future<List<Reminder>> getCompletedReminders() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final maps = await db.query(
       'reminders',
       where: 'isCompleted = ?',
@@ -179,7 +206,8 @@ class ReminderManager {
   }
 
   Future<List<Reminder>> getPendingReminders() async {
-    final db = await database;
+    final db = await DBHelper.instance.database;
+
     final maps = await db.query(
       'reminders',
       where: 'isCompleted = ?',
