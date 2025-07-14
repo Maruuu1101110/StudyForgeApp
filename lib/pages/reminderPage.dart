@@ -40,6 +40,7 @@ class _ReminderPageState extends State<ForgeReminderPage>
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
   late CalendarFormat _calendarFormat = CalendarFormat.month;
+  Map<DateTime, List<Reminder>> _events = {};
 
   @override
   void didChangeDependencies() {
@@ -55,7 +56,9 @@ class _ReminderPageState extends State<ForgeReminderPage>
   }
 
   @override
-  void didPopNext() => loadReminders();
+  void didPopNext() {
+    loadReminders();
+  }
 
   @override
   void initState() {
@@ -111,20 +114,55 @@ class _ReminderPageState extends State<ForgeReminderPage>
   Future<void> loadReminders() async {
     setState(() => isLoading = true);
     final allReminders = await reminderManager.getAllReminders();
-    setState(() => this.allReminders = allReminders);
+
+    setState(() {
+      this.allReminders = allReminders;
+      _groupRemindersByDate(); // group *after* setting new reminders
+      isLoading = false;
+    });
 
     // Initialize animations after reminders are loaded
     _initializeAnimations();
-
-    setState(() => isLoading = false);
 
     // Start the stagger animation
     _staggerController.reset();
     _staggerController.forward();
   }
 
+  void _groupRemindersByDate() {
+    _events.clear();
+    for (var reminder in allReminders) {
+      final day = DateTime(
+        reminder.dueDate.year,
+        reminder.dueDate.month,
+        reminder.dueDate.day,
+      );
+      if (_events[day] == null) {
+        _events[day] = [reminder];
+      } else {
+        _events[day]!.add(reminder);
+      }
+    }
+  }
+
+  Widget _buildEventsMarker(int count) {
+    return Container(
+      width: 7,
+      height: 7,
+      decoration: BoxDecoration(color: Colors.amber, shape: BoxShape.circle),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Filter reminders for the selected calendar day
+    final filteredReminders = allReminders.where((reminder) {
+      final scheduledDate = reminder.dueDate;
+      return scheduledDate.year == _selectedDay.year &&
+          scheduledDate.month == _selectedDay.month &&
+          scheduledDate.day == _selectedDay.day;
+    }).toList();
+
     return PopScope(
       canPop: widget.source == NavigationSource.homePage,
       onPopInvokedWithResult: (didPop, result) async {
@@ -375,6 +413,20 @@ class _ReminderPageState extends State<ForgeReminderPage>
                     _focusedDay = focusedDay;
                   });
                 },
+                eventLoader: (day) {
+                  return _events[DateTime(day.year, day.month, day.day)] ?? [];
+                },
+                calendarBuilders: CalendarBuilders(
+                  markerBuilder: (context, date, events) {
+                    if (events.isNotEmpty) {
+                      return Positioned(
+                        bottom: 4,
+                        child: _buildEventsMarker(events.length),
+                      );
+                    }
+                    return SizedBox.shrink();
+                  },
+                ),
               ),
             ),
 
@@ -407,53 +459,90 @@ class _ReminderPageState extends State<ForgeReminderPage>
             ),
 
             // Scrollable list of reminders
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                itemCount: allReminders.length,
-                itemBuilder: (context, index) {
-                  final reminder = allReminders[index];
-                  final isSelected = selectedCards.contains(reminder.id);
+            filteredReminders.isEmpty
+                ? _buildEmptyState()
+                : Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      itemCount: filteredReminders.length,
+                      itemBuilder: (context, index) {
+                        final reminder = filteredReminders[index];
+                        final isSelected = selectedCards.contains(reminder.id);
 
-                  // Ensure we have animations for this index
-                  if (index >= _slideAnimations.length ||
-                      index >= _fadeAnimations.length) {
-                    return const SizedBox.shrink();
-                  }
+                        // Ensure we have animations for this index
+                        if (index >= _slideAnimations.length ||
+                            index >= _fadeAnimations.length) {
+                          return const SizedBox.shrink();
+                        }
 
-                  return SlideTransition(
-                    position: _slideAnimations[index],
-                    child: FadeTransition(
-                      opacity: _fadeAnimations[index],
-                      child: Padding(
-                        key: ValueKey(reminder.id),
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: ReminderCard(
-                          reminder: reminder,
-                          isSelected: isSelected,
-                          isSelectionMode: isSelectionMode,
-                          onSelectToggle: (id) {
-                            setState(() {
-                              if (selectedCards.contains(id)) {
-                                selectedCards.remove(id);
-                              } else {
-                                selectedCards.add(id);
-                              }
-                            });
-                          },
-                          onRefresh:
-                              loadReminders, // Refresh after status change
-                        ),
-                      ),
+                        return SlideTransition(
+                          position: _slideAnimations[index],
+                          child: FadeTransition(
+                            opacity: _fadeAnimations[index],
+                            child: Padding(
+                              key: ValueKey(reminder.id),
+                              padding: const EdgeInsets.symmetric(vertical: 5),
+                              child: ReminderCard(
+                                reminder: reminder,
+                                isSelected: isSelected,
+                                isSelectionMode: isSelectionMode,
+                                onSelectToggle: (id) {
+                                  setState(() {
+                                    if (selectedCards.contains(id)) {
+                                      selectedCards.remove(id);
+                                    } else {
+                                      selectedCards.add(id);
+                                    }
+                                  });
+                                },
+                                onRefresh:
+                                    loadReminders, // Refresh after status change
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
+                  ),
           ],
         ),
 
         floatingActionButton: FloatingSpeedDial(isReminders: true),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.alarm_outlined,
+            size: 64,
+            color: Colors.white.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No reminders scheduled for this day.',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w300,
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap the + button to schedule one.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
