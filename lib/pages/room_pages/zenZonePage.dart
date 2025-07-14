@@ -7,6 +7,8 @@ import 'package:study_forge/tables/room_table.dart';
 import 'package:study_forge/utils/navigationObservers.dart';
 import 'package:study_forge/pages/room_pages/room_files_page.dart';
 import 'package:study_forge/utils/file_manager_service.dart';
+import 'package:study_forge/utils/gamification_service.dart';
+import 'package:study_forge/tables/user_profile_table.dart';
 
 class ZenZonePage extends StatefulWidget {
   final Room room;
@@ -54,7 +56,11 @@ class _ZenZonePageState extends State<ZenZonePage>
   int _remainingTimeInSeconds = 0;
 
   RoomTableManager roomManager = RoomTableManager();
+  UserProfileManager userProfileManager = UserProfileManager();
+  GamificationService gamificationService = GamificationService();
+  DateTime? lastStudyDate;
 
+  // files in the room
   List<FileSystemEntity> _roomFiles = [];
 
   @override
@@ -88,7 +94,10 @@ class _ZenZonePageState extends State<ZenZonePage>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      routeObserver.subscribe(this, route);
+    }
   }
 
   @override
@@ -255,6 +264,24 @@ class _ZenZonePageState extends State<ZenZonePage>
     _resetTimer();
   }
 
+  void _updateGameStatus() async {
+    final oldProfile = await gamificationService.getUserProfile();
+
+    // This updates streak + XP
+    final newProfile = await gamificationService.recordStudySession();
+
+    // Update session count (not part of XP logic, but good to keep!)
+    await userProfileManager.updateTotalSessions(_totalSessions);
+
+    // Show gamified feedback
+    gamificationService.showGamificationNotifications(
+      oldProfile,
+      newProfile,
+      50, // XP gained
+      context,
+    );
+  }
+
   void _onTimerComplete() async {
     _timer?.cancel();
     _rotationController.stop();
@@ -276,6 +303,8 @@ class _ZenZonePageState extends State<ZenZonePage>
     await roomManager.updateStudyTime(widget.room.id!, totalMinutes);
 
     HapticFeedback.heavyImpact();
+
+    _updateGameStatus();
 
     _showSessionCompletedDialog();
     _suggestNextMode();
@@ -1074,50 +1103,46 @@ class _ZenZonePageState extends State<ZenZonePage>
         ],
       ),
       endDrawer: _buildRoomEndDrawer(),
-      body: Expanded(
-        child: Column(
-          children: [
-            _buildRoomHeader(),
-            const SizedBox(height: 40),
-
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildTimerDisplay(),
-                  const SizedBox(height: 20),
-                  _buildSetTimerButton(),
-                  const SizedBox(height: 40),
-                  _buildControlButtons(),
-                ],
-              ),
+      body: Column(
+        children: [
+          _buildRoomHeader(),
+          const SizedBox(height: 40),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildTimerDisplay(),
+                const SizedBox(height: 20),
+                _buildSetTimerButton(),
+                const SizedBox(height: 40),
+                _buildControlButtons(),
+              ],
             ),
-
-            Container(
-              padding: const EdgeInsets.all(10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatCard(
-                    'Total Focus',
-                    '${(_totalFocusTime / 60).floor()}m',
-                    Icons.timer,
-                  ),
-                  _buildStatCard(
-                    'Sessions',
-                    '${_totalSessions}',
-                    Icons.check_circle,
-                  ),
-                  _buildStatCard(
-                    'Breaks',
-                    '${((_totalShortBreakTime + _totalLongBreakTime) ~/ 60)}m',
-                    Icons.coffee,
-                  ),
-                ],
-              ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatCard(
+                  'Total Focus',
+                  '${(_totalFocusTime / 60).floor()}m',
+                  Icons.timer,
+                ),
+                _buildStatCard(
+                  'Sessions',
+                  '${_totalSessions}',
+                  Icons.check_circle,
+                ),
+                _buildStatCard(
+                  'Breaks',
+                  '${((_totalShortBreakTime + _totalLongBreakTime) ~/ 60)}m',
+                  Icons.coffee,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
