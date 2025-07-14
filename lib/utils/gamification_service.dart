@@ -1,5 +1,7 @@
 import 'package:study_forge/tables/user_profile_table.dart';
 import 'package:study_forge/models/user_profile_model.dart';
+import 'package:flutter/material.dart';
+import 'package:study_forge/themes/forge_colors.dart';
 
 class GamificationService {
   static final GamificationService _instance = GamificationService._internal();
@@ -11,7 +13,7 @@ class GamificationService {
   // record study session and update streak
   Future<UserProfile> recordStudySession() async {
     await _profileManager.updateStudyStreak();
-    await _profileManager.addExperiencePoints(25); // base xp for studying
+    await _profileManager.addExperiencePoints(50); // base xp for studying
     return await _profileManager.checkMilestoneBadges();
   }
 
@@ -55,6 +57,164 @@ class GamificationService {
     } else {
       return StreakStatus.broken;
     }
+  }
+
+  Future<void> showGamificationNotifications(
+    UserProfile oldProfile,
+    UserProfile newProfile,
+    int baseXP,
+    BuildContext context,
+  ) async {
+    int delay = 0;
+
+    if (GamificationService.didLevelUp(oldProfile, newProfile)) {
+      Future.delayed(Duration(milliseconds: delay), () {
+        showLevelUpCelebration(newProfile.level, context);
+      });
+      delay += 500;
+    }
+
+    // then show badge if they got one
+    if (GamificationService.didEarnBadge(oldProfile, newProfile)) {
+      Future.delayed(Duration(milliseconds: delay), () {
+        showBadgeEarned(newProfile.badges.last, context);
+      });
+      delay += 500;
+    }
+
+    // finally show xp gained if no level up happened
+    if (!GamificationService.didLevelUp(oldProfile, newProfile)) {
+      Future.delayed(Duration(milliseconds: delay), () {
+        showXPGained(baseXP, context);
+      });
+    }
+  }
+
+  void showLevelUpCelebration(int newLevel, context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: ForgeColors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+        content: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [ForgeColors.purple600, ForgeColors.pink600],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.celebration, color: ForgeColors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'LEVEL UP! 🎉',
+                      style: TextStyle(
+                        color: ForgeColors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      'You reached Level $newLevel!',
+                      style: TextStyle(color: ForgeColors.white, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void showBadgeEarned(String badge, context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: ForgeColors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        content: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [ForgeColors.orange600, ForgeColors.amber600],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(Icons.military_tech, color: ForgeColors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'BADGE EARNED! 🏆',
+                      style: TextStyle(
+                        color: ForgeColors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      badge,
+                      style: TextStyle(color: ForgeColors.white, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void showXPGained(int xp, context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: ForgeColors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        content: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [ForgeColors.amber600, ForgeColors.orange700],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.stars, color: ForgeColors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                '+$xp XP',
+                style: TextStyle(
+                  color: ForgeColors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   String getStreakMessage(int streak) {
