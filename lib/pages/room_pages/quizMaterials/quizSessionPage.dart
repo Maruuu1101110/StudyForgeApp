@@ -444,7 +444,6 @@ class _QuizSessionPageState extends State<QuizSessionPage>
   ) {
     return SizedBox(
       width: MediaQuery.of(context).size.width,
-      height: 70,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -462,16 +461,18 @@ class _QuizSessionPageState extends State<QuizSessionPage>
               ? [BoxShadow(color: Colors.black26, blurRadius: 6)]
               : [],
         ),
-        child: ListTile(
-          title: Text(
-            text,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              fontSize: 16,
+        child: Expanded(
+          child: ListTile(
+            title: Text(
+              text,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 16,
+              ),
             ),
+            onTap: onTap,
           ),
-          onTap: onTap,
         ),
       ),
     );
