@@ -2,7 +2,7 @@ name: study_forge
 description: "A personal app for my personal preferences."
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 1.2.0+20 # Beta official release
+version: 1.2.1+21 # Beta official release
 
 environment:
   sdk: ^3.8.1

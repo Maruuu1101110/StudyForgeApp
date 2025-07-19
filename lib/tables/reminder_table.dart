@@ -58,7 +58,9 @@ class ReminderManager {
       await db.execute(
         'ALTER TABLE reminders ADD COLUMN notificationId INTEGER DEFAULT NULL',
       );
-    } catch (e) {} // catches are for ignoring existing columns
+    } catch (e) {
+      debugPrint("Error $e");
+    } // catches are for ignoring existing columns
   }
 
   Future<void> ensureReminderTableExists() async {

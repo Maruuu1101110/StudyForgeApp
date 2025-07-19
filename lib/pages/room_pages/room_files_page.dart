@@ -607,8 +607,9 @@ class _RoomFilesPageState extends State<RoomFilesPage>
 
       for (final pickedFileResult in pickedFiles) {
         final isPdf = pickedFileResult.file.path.toLowerCase().endsWith('.pdf');
+        final isMd = pickedFileResult.file.path.toLowerCase().endsWith('.md');
 
-        if (isPdf) {
+        if (isPdf || isMd) {
           final savedFile = await FileManagerService.instance.saveFileToRoom(
             sourceFile: pickedFileResult.file,
             roomId: widget.room.id!.toString(),
@@ -1103,6 +1104,7 @@ class ViewOnlyFileListView extends StatelessWidget {
       case 'docx':
         return Icons.description;
       case 'txt':
+      case 'md':
         return Icons.text_snippet;
       case 'jpg':
       case 'jpeg':

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:study_forge/utils/file_manager_service.dart';
 
-enum FileType { pdf, word, powerpoint, image, other }
+enum FileType { pdf, word, powerpoint, image, markdown, other }
 
 class FilePickerService {
   static FilePickerService? _instance;
@@ -23,6 +23,7 @@ class FilePickerService {
     'jpeg',
     'png',
     'txt',
+    'md',
     'rtf',
   ];
 
@@ -61,7 +62,8 @@ class FilePickerService {
           extension: platformFile.extension ?? '',
           fileType: fileType,
           sizeBytes: platformFile.size,
-          needsConversion: fileType != FileType.pdf,
+          needsConversion:
+              fileType != FileType.pdf && fileType != FileType.markdown,
         );
 
         if (roomId != null) {
@@ -155,6 +157,8 @@ class FilePickerService {
       return FileType.powerpoint;
     } else if (imageExtensions.contains(ext)) {
       return FileType.image;
+    } else if (ext == 'md') {
+      return FileType.markdown;
     } else {
       return FileType.other;
     }
@@ -220,8 +224,9 @@ class FilePickerService {
   }
 
   bool isConversionNeeded(String filePath) {
-    final extension = getFileExtension(filePath).replaceFirst('.', '');
-    return !pdfExtensions.contains(extension);
+    final ext = getFileExtension(filePath).replaceFirst('.', '');
+    final type = _getFileType(ext);
+    return type != FileType.pdf && type != FileType.markdown;
   }
 }
 
@@ -252,4 +257,5 @@ class PickedFileResult {
   bool get isWord => fileType == FileType.word;
   bool get isPowerpoint => fileType == FileType.powerpoint;
   bool get isImage => fileType == FileType.image;
+  bool get isMarkdown => fileType == FileType.markdown;
 }
