@@ -99,18 +99,18 @@ class _EmberChatPageState extends State<EmberChatPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.quickMessage?.isNotEmpty == true) {
         sendMessage(prefilledText: widget.quickMessage);
+        _scrollToBottom();
       }
+      _scrollToBottom();
     });
-
-    _scrollToBottom();
   }
 
   Future<void> _initializeEmberService() async {
     try {
       await EmberAIService().init(); // load db-stored API values here
-      debugPrint("✅ Ember AI Service Initialized");
+      debugPrint("--- Ember AI Service Initialized");
     } catch (e) {
-      debugPrint("❌ Ember init error: $e");
+      debugPrint("--- Ember init error: $e");
       // Optional: show a dialog/snackbar that says "Check Ember API config"
     }
   }
@@ -154,6 +154,8 @@ class _EmberChatPageState extends State<EmberChatPage>
         .where((m) => m.status == MessageStatus.sent)
         .toList()
         .takeLast(maxTurns);
+
+    debugPrint(" #### MAX TURNS ::: ${maxTurns.toString()} ####");
 
     return filtered
         .map(
@@ -311,6 +313,7 @@ class _EmberChatPageState extends State<EmberChatPage>
         }
       }
     });
+    debugPrint("### Scrolled to bottom ### ");
   }
 
   void _smoothScrollToBottom() {
@@ -483,14 +486,25 @@ class _EmberChatPageState extends State<EmberChatPage>
                 Colors.orange.shade300,
               ],
             ).createShader(bounds),
-            child: const Text(
-              'Ember AI',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w300,
-                color: Colors.white,
-                letterSpacing: 1.2,
-              ),
+            child: Row(
+              children: [
+                EmberMemoryController.instance.shortTermLimit == 30
+                    ? Icon(
+                        Icons.whatshot_rounded,
+                        color: Colors.orange,
+                        size: 28,
+                      )
+                    : Container(),
+                Text(
+                  'Ember AI',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w300,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
             ),
           ),
           backgroundColor: Colors.transparent,
@@ -643,7 +657,7 @@ class _EmberChatPageState extends State<EmberChatPage>
                                       Colors.orange.shade300,
                                     ],
                                   ).createShader(bounds),
-                                  child: const Text(
+                                  child: Text(
                                     'Ember',
                                     style: TextStyle(
                                       fontSize: 36,
@@ -760,6 +774,13 @@ class _EmberChatPageState extends State<EmberChatPage>
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      EmberMemoryController.instance.shortTermLimit == 30
+                          ? Icon(
+                              Icons.whatshot_rounded,
+                              color: Colors.orange,
+                              size: 16,
+                            )
+                          : Container(),
 
                       if (msg.status == MessageStatus.sending && _isSending)
                         Padding(
@@ -1045,44 +1066,27 @@ class _EmberChatPageState extends State<EmberChatPage>
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _controller.text.length > _maxMessageLength
-                              ? Colors.red.withValues(alpha: 0.5)
-                              : Colors.transparent,
-                          width: 1,
+                    child: TextField(
+                      cursorColor: Colors.amber,
+                      controller: _controller,
+                      focusNode: _textFieldFocusNode,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      decoration: InputDecoration(
+                        hintText: 'Ask Ember something...',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
                         ),
                       ),
-                      child: SingleChildScrollView(
-                        child: TextField(
-                          cursorColor: Colors.amber,
-                          controller: _controller,
-                          focusNode: _textFieldFocusNode,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Ask Ember something...',
-                            hintStyle: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 16,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 16,
-                            ),
-                          ),
-                          onSubmitted: (_) => sendMessage(),
-                          minLines: 1,
-                          maxLines: 2,
-                          maxLength: null,
-                        ),
-                      ),
+                      onSubmitted: (_) => sendMessage(),
+                      minLines: 1,
+                      maxLines: 3,
+                      maxLength: null,
                     ),
                   ),
 
