@@ -88,7 +88,7 @@ class _SettingsPageState extends State<SettingsPage> {
             SwitchListTile(
               title: Text("Cram Mode", style: ForgeTextStyles.tileTitle),
               subtitle: Text(
-                "Temporarily expands Ember’s short-term memory from 5 to 15 sets.\n"
+                "Temporarily expands Ember’s short-term memory from 10 to 30 sets.\n"
                 "Best for long review sessions.\n"
                 "⚠️ May affect performance — use only when needed.",
                 style: ForgeTextStyles.tileSubtitle,
@@ -100,9 +100,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   _limitMemoryPersistence = value;
                 });
 
-                // 🔧 Hook into Ember's memory handler here
                 EmberMemoryController.instance.updateShortTermLimit(
-                  value ? 15 : 5,
+                  value ? 30 : 10,
                 );
               },
             ),
@@ -182,7 +181,7 @@ class EmberMemoryController {
   static final instance = EmberMemoryController._();
   EmberMemoryController._();
 
-  int shortTermLimit = 5;
+  int shortTermLimit = 10;
 
   void updateShortTermLimit(int value) {
     shortTermLimit = value;
