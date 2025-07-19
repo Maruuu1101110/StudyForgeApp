@@ -85,6 +85,12 @@ It is still in its early stages hence the lack of features but here are the feat
 - Finished Implementing Quizzes and Flashcards
 - Added the Zen Zone page for study sessions
 
+## Patch 1.2.1: July 19, 2025 (BETA)
+- Improved UX for Ember Chat Page and Home Page.
+- Bug fix for Upcomming Reminders not showing 2 days ahead.
+- Adds .md extension support for Room File picker.
+- Minor adjustments...
+
 
 <br />
 
