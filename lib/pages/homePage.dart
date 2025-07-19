@@ -416,7 +416,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
         _controllerHome.text.trim().isNotEmpty &&
         _controllerHome.text.length <= _maxMessageLength;
 
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -425,7 +425,6 @@ class _ForgeHomeState extends State<ForgeHomePage>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-              height: 50,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
@@ -907,6 +906,18 @@ class _ForgeHomeState extends State<ForgeHomePage>
       children: reminders.map((reminder) {
         final time = DateFormat('hh:mm a').format(reminder.dueDate);
         final isToday = DateTime.now().day == reminder.dueDate.day;
+        final isTomorrow =
+            DateTime.now().add(const Duration(days: 1)).day ==
+            reminder.dueDate.day;
+
+        String label;
+        if (isToday) {
+          label = 'Today';
+        } else if (isTomorrow) {
+          label = 'Tomorrow';
+        } else {
+          label = DateFormat('EEEE').format(reminder.dueDate);
+        }
 
         return ListTile(
           dense: true,
@@ -920,7 +931,7 @@ class _ForgeHomeState extends State<ForgeHomePage>
             style: const TextStyle(color: Colors.white, fontSize: 15),
           ),
           subtitle: Text(
-            "${isToday ? 'Today' : 'Tomorrow'} · $time",
+            "$label · $time",
             style: const TextStyle(color: Colors.white70),
           ),
         );
@@ -929,13 +940,19 @@ class _ForgeHomeState extends State<ForgeHomePage>
   }
 
   List<Reminder> _filterUpcomingReminders(List<Reminder> allReminders) {
-    final now = DateTime.now();
-    final tomorrow = now.add(Duration(days: 1));
-    final end = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59);
+    final today = DateTime.now();
+    final twoDaysFromNow = today.add(Duration(days: 2));
+    final end = DateTime(
+      twoDaysFromNow.year,
+      twoDaysFromNow.month,
+      twoDaysFromNow.day,
+      23,
+      59,
+    );
 
     return allReminders.where((reminder) {
       final time = reminder.dueDate;
-      return time.isAfter(now) && time.isBefore(end);
+      return time.isAfter(today) && time.isBefore(end);
     }).toList()..sort((a, b) => a.dueDate.compareTo(b.dueDate));
   }
 
